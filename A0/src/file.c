@@ -50,10 +50,7 @@ int main(int argc, char* argv[]) {
           break;
         } else if (read == 0) {
           break;
-        }
-
-        // Check data type
-        if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) {
+        } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) {
           cur_type = ASCII;
         } else {
           cur_type = DATA;
