@@ -4,16 +4,10 @@
 #include <string.h> // strerror
 
 enum file_type {
-  DATA = 0,
-  EMPTY = 1,
-  ASCII = 2,
+  DATA ,
+  EMPTY,
+  ASCII,
 };
-
-enum file_type cur_type = 1;
-
-enum file_type FindType(){
-  return cur_type;
-}
 
 const char * const FILE_TYPE_STRINGS[] = {
   "data",
@@ -21,9 +15,7 @@ const char * const FILE_TYPE_STRINGS[] = {
   "ASCII text",
 };
 
-int print_hello_world() {
-  return fprintf(stdout, "Hello, world!\n");
-}
+enum file_type cur_type;
 
 int print_error(char *path, int errnum) {
   return fprintf(stdout, "%s: Cannot determine (%s)\n", path, strerror(errnum));
@@ -47,24 +39,28 @@ int main(int argc, char* argv[]) {
     // Check that file exist
     if (f != NULL) {
       // Read file from start to end 
+      int i = 0;
       while (1) {
         char b;
         int read = fread(&b, 1, 1, f);
 
-        // Stop loop when file is read to the end
-        if (read == 0) {
+        // Stop loop when file is read to the end or empty
+        if (read == 0 && i == 0) {
+          cur_type = EMPTY;
+          break;
+        } else if (read == 0) {
           break;
         }
 
-        if (b == 0 && FindType() != DATA && FindType() != ASCII){
-          cur_type = EMPTY;
-        } else if (((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) && FindType() != DATA) {
+        // Check data type
+        if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) {
           cur_type = ASCII;
         } else {
           cur_type = DATA;
           break;
         }
-        // Check chars
+
+        i++;
       }
       
     } else {
@@ -72,24 +68,10 @@ int main(int argc, char* argv[]) {
       retval = EXIT_FAILURE;
     }
     
-    if(FindType() == DATA) {
-      fprintf(stdout,"%s: data", filename);
-    }else if (FindType() == EMPTY)
-    {
-      fprintf (stdout,"%s: empty", filename);
-    } else {
-      fprintf (stdout,"%s: ASCII text", filename);
-    }
-    fprintf(stdout,"\n");
+    fprintf(stdout, "%s: %s\n", filename, FILE_TYPE_STRINGS[cur_type] );
 
     fclose(f);
 
   }
-  
-
-  // if (print_hello_world() <= 0) {
-  //   retval = EXIT_FAILURE;
-  // }
-
   return retval;
 }
