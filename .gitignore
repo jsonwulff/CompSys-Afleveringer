@@ -1,3 +1,4 @@
+*.user
 file
 file.dSYM
 test_files
