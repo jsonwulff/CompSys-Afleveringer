@@ -25,8 +25,17 @@ int print_error(char* path, int errnum) {
 
 int print_hello_world() { return fprintf(stdout, "Hello, world!\n"); }
 
-void getFileType(char* filename) {
+int getMaxLength(int a, int b) {
+  if (a > b) {
+    return a;
+  } else {
+    return b;
+  }
+}
+
+void getFileType(char* filename, int max_length) {
   FILE* f = fopen(filename, "r");
+  int stringLength = strlen(filename);
 
   if (f != NULL) {
     int i = 0;
@@ -50,7 +59,8 @@ void getFileType(char* filename) {
 
       i++;
     }
-    fprintf(stdout, "%s: %s\n", filename, FILE_TYPE_STRINGS[cur_type]);
+    fprintf(stdout, "%s:%*s%s\n", filename, (max_length - stringLength), " ",
+            FILE_TYPE_STRINGS[cur_type]);
   } else {
     print_error(filename, errno);
   }
@@ -64,8 +74,13 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Usage: file path\n");
     retval = EXIT_FAILURE;
   } else {
+    int max_length = 0;
     for (int i = 1; i < argc; i++) {
-      getFileType(argv[i]);
+      max_length = getMaxLength(max_length, strlen(argv[i]));
+    }
+    max_length++;
+    for (int i = 1; i < argc; i++) {
+      getFileType(argv[i], max_length);
     }
   }
   return retval;
