@@ -3,6 +3,8 @@
 #include <stdlib.h>  // EXIT_FAILURE, EXIT_SUCCESS.
 #include <string.h>  //  strerror
 
+// Try not to use magic constants? Where?
+
 enum file_type {
   DATA,
   EMPTY,
@@ -23,27 +25,36 @@ int print_error(char* path, int errnum) {
 
 int print_hello_world() { return fprintf(stdout, "Hello, world!\n"); }
 
-void getFileType(FILE* file) {
-  int i = 0;
-  while (1) {
-    char b;
-    int read = fread(&b, 1, 1, file);
+void getFileType(char* filename) {
+  FILE* f = fopen(filename, "r");
 
-    if (read == 0 && i == 0) {
-      cur_type = EMPTY;
-      break;
-    } else if (read == 0) {
-      break;
-    } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B ||
-               (b >= 0x20 && b <= 0x7E)) {
-      cur_type = ASCII;
-    } else {
-      cur_type = DATA;
-      break;
+  if (f != NULL) {
+    int i = 0;
+
+    while (1) {
+      char b;
+      int read = fread(&b, 1, 1, f);
+
+      if (read == 0 && i == 0) {
+        cur_type = EMPTY;
+        break;
+      } else if (read == 0) {
+        break;
+      } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B ||
+                 (b >= 0x20 && b <= 0x7E)) {
+        cur_type = ASCII;
+      } else {
+        cur_type = DATA;
+        break;
+      }
+
+      i++;
     }
-
-    i++;
+    fprintf(stdout, "%s: %s\n", filename, FILE_TYPE_STRINGS[cur_type]);
+  } else {
+    print_error(filename, errno);
   }
+  fclose(f);
 }
 
 int main(int argc, char* argv[]) {
@@ -52,24 +63,10 @@ int main(int argc, char* argv[]) {
   if (argc == 1) {
     fprintf(stderr, "Usage: file path\n");
     retval = EXIT_FAILURE;
-  } else if (argc > 2) {
-    fprintf(stderr, "To many arguments given\n");
-    retval = EXIT_FAILURE;
   } else {
-    char* filename = argv[1];
-
-    FILE* f = fopen(filename, "r");
-
-    if (f != NULL) {
-      getFileType(f);
-    } else {
-      fclose(f);
-      print_error(argv[1], errno);
-      retval = EXIT_FAILURE;
-      return retval;
+    for (int i = 1; i < argc; i++) {
+      getFileType(argv[i]);
     }
-
-    fprintf(stdout, "%s: %s\n", filename, FILE_TYPE_STRINGS[cur_type]);
   }
   return retval;
 }
