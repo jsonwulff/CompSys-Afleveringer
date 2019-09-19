@@ -4,11 +4,10 @@
 #include <string.h>  //  strerror
 
 // #define UTF8_CONT(b) (((b >= 192) && (b <= 223)) ? b : 0 )
-#define UTF8_CONT(b) ((((b) >= 0) && ((b) <= 127)) ? (1) : (0))
-#define UTF8_CONT_B(b) (b)
-#define UTF8_2B(b) ((((b) >= 192) && ((b) <= 223)) ? (1) : (0))
-#define UTF8_3B(b) ((((b) >= 224) && ((b) <= 239)) ? (1) : (0))
-#define UTF8_4B(b) ((((b) >= 240) && ((b) <= 247)) ? (1) : (0))
+#define UTF8_CONT(b) ((((b) >> 6) == 2) ? (1) : (0))
+#define UTF8_2B(b) ((((b) >> 5) == 6) ? (1) : (0))
+#define UTF8_3B(b) ((((b) >> 4) == 14) ? (1) : (0))
+#define UTF8_4B(b) ((((b) >> 3) == 30) ? (1) : (0))
 
 enum file_type {
   DATA,
@@ -35,18 +34,6 @@ enum file_type cur_type;
 int print_error(const char* path, int max_length, int errnum) {
   return fprintf(stdout, "%s:%*scannot determine (%s)\n", path,
                  (int)(max_length - strlen(path)), " ", strerror(errnum));
-}
-
-// Remove this
-int print_hello_world() { return fprintf(stdout, "Hello, world!\n"); }
-
-// Remove this
-int getMaxLength(int a, int b) {
-  if (a > b) {
-    return a;
-  } else {
-    return b;
-  }
 }
 
 int getMaxLength2(int nPaths, char* path[]) {
@@ -108,6 +95,7 @@ int main(int argc, char* argv[]) {
     retval = EXIT_FAILURE;
   } else {
     int max_length = getMaxLength2(argc, argv) + 1;
+    // Put this for loop in the getFileType function
     for (int i = 1; i < argc; i++) {
       getFileType(argv[i], max_length);
     }

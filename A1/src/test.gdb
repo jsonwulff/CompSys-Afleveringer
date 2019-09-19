@@ -23,14 +23,6 @@ p UTF8_CONT(128 | 63) > 0
 p UTF8_CONT(128 + 64) == 0
 p UTF8_CONT(128 | 64) == 0
 #
-p "Testing UTF8_CONT_B.."
-p UTF8_CONT_B(128 + 1)
-p UTF8_CONT_B(128 | 1)
-p UTF8_CONT_B(128 | 63)
-p UTF8_CONT_B(128 | 63)
-p UTF8_CONT_B(128 + 64)
-p UTF8_CONT_B(128 | 64)
-#
 p "Testing UTF8_2B.."
 p UTF8_2B(128 + 64) != 0
 p UTF8_2B(128 | 64) != 0
