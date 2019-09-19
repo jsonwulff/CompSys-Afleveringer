@@ -3,28 +3,44 @@
 #include <stdlib.h>  // EXIT_FAILURE, EXIT_SUCCESS.
 #include <string.h>  //  strerror
 
-// Try not to use magic constants? Where?
+// #define UTF8_CONT(b) (((b >= 192) && (b <= 223)) ? b : 0 )
+#define UTF8_CONT(b) ((((b) >= 0) && ((b) <= 127)) ? (1) : (0))
+#define UTF8_CONT_B(b) (b)
+#define UTF8_2B(b) ((((b) >= 192) && ((b) <= 223)) ? (1) : (0))
+#define UTF8_3B(b) ((((b) >= 224) && ((b) <= 239)) ? (1) : (0))
+#define UTF8_4B(b) ((((b) >= 240) && ((b) <= 247)) ? (1) : (0))
 
 enum file_type {
   DATA,
   EMPTY,
   ASCII,
+  ISO8859,
+  UTF8,
+  LEUTF16,
+  BEUTF16,
 };
 
 const char* const FILE_TYPE_STRINGS[] = {
     "data",
     "empty",
     "ASCII text",
+    "ISO-8859 text",
+    "UTF-8 Unicode text",
+    "Little-endian UTF-16 Unicode text",
+    "Big-endian UTF-16 Unicode text",
 };
 
 enum file_type cur_type;
 
-int print_error(char* path, int errnum) {
-  return fprintf(stdout, "%s: Cannot determine (%s)\n", path, strerror(errnum));
+int print_error(const char* path, int max_length, int errnum) {
+  return fprintf(stdout, "%s:%*scannot determine (%s)\n", path,
+                 (int)(max_length - strlen(path)), " ", strerror(errnum));
 }
 
+// Remove this
 int print_hello_world() { return fprintf(stdout, "Hello, world!\n"); }
 
+// Remove this
 int getMaxLength(int a, int b) {
   if (a > b) {
     return a;
@@ -33,25 +49,43 @@ int getMaxLength(int a, int b) {
   }
 }
 
-void getFileType(char* filename, int max_length) {
-  FILE* f = fopen(filename, "r");
-  int stringLength = strlen(filename);
+int getMaxLength2(int nPaths, char* path[]) {
+  int max_length = 0;
+  for (int i = 1; i < nPaths; i++) {
+    int stringLength = strlen(path[i]);
+    if (stringLength > max_length) {
+      max_length = stringLength;
+    }
+  }
+  return max_length;
+}
+
+void getFileType(char* path, int max_length) {
+  FILE* f = fopen(path, "r");
 
   if (f != NULL) {
     int i = 0;
 
     while (1) {
-      char b;
+      unsigned char b;
       int read = fread(&b, 1, 1, f);
 
+      // Exit loop if file read is done
+      if (read == 0 && i != 0) {
+        break;
+      }
+      // Empty check
       if (read == 0 && i == 0) {
         cur_type = EMPTY;
         break;
-      } else if (read == 0) {
-        break;
-      } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B ||
-                 (b >= 0x20 && b <= 0x7E)) {
+      }
+
+      if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) {
         cur_type = ASCII;
+      } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B ||
+                 (b >= 0x20 && b <= 0x7E) || (b >= 0xA0)) {
+        cur_type = ISO8859;
+        break;
       } else {
         cur_type = DATA;
         break;
@@ -59,26 +93,21 @@ void getFileType(char* filename, int max_length) {
 
       i++;
     }
-    fprintf(stdout, "%s:%*s%s\n", filename, (max_length - stringLength), " ",
+    fprintf(stdout, "%s:%*s%s\n", path, (int)(max_length - strlen(path)), " ",
             FILE_TYPE_STRINGS[cur_type]);
   } else {
-    print_error(filename, errno);
+    print_error(path, max_length, errno);
   }
   fclose(f);
 }
 
 int main(int argc, char* argv[]) {
   int retval = EXIT_SUCCESS;
-  // Check correct number of arguments
   if (argc == 1) {
     fprintf(stderr, "Usage: file path\n");
     retval = EXIT_FAILURE;
   } else {
-    int max_length = 0;
-    for (int i = 1; i < argc; i++) {
-      max_length = getMaxLength(max_length, strlen(argv[i]));
-    }
-    max_length++;
+    int max_length = getMaxLength2(argc, argv) + 1;
     for (int i = 1; i < argc; i++) {
       getFileType(argv[i], max_length);
     }
