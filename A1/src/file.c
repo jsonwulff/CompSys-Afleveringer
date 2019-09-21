@@ -67,10 +67,11 @@ void getFileType(char* path, int max_length) {
       unsigned char b;
       int read = fread(&b, 1, 1, f);
 
-      // Exit loop if file read is done
+      // Exit loop at the end of the file
       if (read == 0 && i != 0) {
         break;
       }
+
       // Empty check
       if (read == 0 && i == 0) {
         cur_type = EMPTY;
@@ -95,8 +96,7 @@ void getFileType(char* path, int max_length) {
         nContByte = 0;
         firstByte = b;
         continue;
-      }
-      if ((UTF8_CONT(b) == 1) && (firstByte != 0)) {
+      } else if ((UTF8_CONT(b) == 1) && (firstByte != 0)) {
         nContByte++;
         if ((UTF8_2B(firstByte) == 1) && (nContByte == 1)) {
           cur_type = UTF8;
@@ -111,7 +111,7 @@ void getFileType(char* path, int max_length) {
         continue;
       }
 
-      // ASCII
+      // ASCII Chek
       if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E) ||
           (b >= 0xA0)) {
         if (b >= 0xA0) {
@@ -143,8 +143,6 @@ int main(int argc, char* argv[]) {
     retval = EXIT_FAILURE;
   } else {
     int max_length = getMaxLength(argc, argv) + 1;
-    // Put this for loop in the getFileType function
-    // Make the function retun a value and use that with the print function
     for (int i = 1; i < argc; i++) {
       getFileType(argv[i], max_length);
     }
