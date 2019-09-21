@@ -34,9 +34,14 @@ const char* const FILE_TYPE_STRINGS[] = {
 
 enum file_type cur_type;
 
-int print_error(const char* path, int max_length, int errnum) {
-  return fprintf(stdout, "%s:%*scannot determine (%s)\n", path,
-                 (int)(max_length - strlen(path)), " ", strerror(errnum));
+int print_success(const char* path, int max_length) {
+  return fprintf(stdout, "%s:%*s%s\n", path, (int)(max_length - strlen(path)),
+                 " ", FILE_TYPE_STRINGS[cur_type]);
+}
+
+int print_error(const char* path, int max_length) {
+  return fprintf(stdout, "%s:%*scannot open `%s' (%s)\n", path,
+                 (int)(max_length - strlen(path)), " ", path, strerror(errno));
 }
 
 int getMaxLength(int nPaths, char* path[]) {
@@ -57,7 +62,6 @@ void getFileType(char* path, int max_length) {
     int i = 0;
     unsigned char firstByte = 0;
     unsigned char nContByte = 0;
-    // // char isLittleEndian = 0;
 
     while (1) {
       unsigned char b;
@@ -73,7 +77,7 @@ void getFileType(char* path, int max_length) {
         break;
       }
 
-      // UTF Endian check
+      // UTF-16 big or small Endian check
       if (((BOM_FF(b) == 1) || (BOM_FE(b) == 1))) {
         if ((BOM_FF(firstByte) == 1)) {
           cur_type = LEUTF16;
@@ -86,6 +90,7 @@ void getFileType(char* path, int max_length) {
         continue;
       }
 
+      // UTF-8 Check
       if ((UTF8_2B(b) == 1) || (UTF8_3B(b) == 1) || (UTF8_4B(b) == 1)) {
         nContByte = 0;
         firstByte = b;
@@ -123,10 +128,10 @@ void getFileType(char* path, int max_length) {
       i++;
       firstByte = 0;
     }
-    fprintf(stdout, "%s:%*s%s\n", path, (int)(max_length - strlen(path)), " ",
-            FILE_TYPE_STRINGS[cur_type]);
+    print_success(path, max_length);
   } else {
-    print_error(path, max_length, errno);
+    print_error(path, max_length);
+    return;
   }
   fclose(f);
 }
@@ -139,6 +144,7 @@ int main(int argc, char* argv[]) {
   } else {
     int max_length = getMaxLength(argc, argv) + 1;
     // Put this for loop in the getFileType function
+    // Make the function retun a value and use that with the print function
     for (int i = 1; i < argc; i++) {
       getFileType(argv[i], max_length);
     }

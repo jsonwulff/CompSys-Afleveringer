@@ -101,8 +101,9 @@ echo "Running the tests.."
 exitcode=0
 f=test_files/*.input
 echo ">>> Testing ${f}.."
-file    ${f} | sed 's/ASCII text.*/ASCII text/' > test_files/expected
-./file  ${f} > test_files/actual
+file    volapyk.input ${f} | sed 's/ASCII text.*/ASCII text/' > test_files/expected
+./file  volapyk.input ${f} > test_files/actual
+
 
 if ! diff -u test_files/expected test_files/actual
 then
