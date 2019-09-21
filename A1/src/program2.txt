@@ -1,7 +1,7 @@
 p2:
-    subq $8, %rsp
-    movq %r11, (%rsp)
-    xorq %edx, %edx
+    subq $8, %rsp                   // $8 = 8                   %rsp = stack pointer
+    movq %r11, (%rsp)               // %r11 = caller saved      %rsp = stack pointer
+    xorq %edx, %edx                 // %edx = 3rd arg 32bit
     xorq %eax, %eax
 .L1:
     leaq (%rsi, %rax, 8), %r11
