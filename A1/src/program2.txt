@@ -1,0 +1,23 @@
+p2:
+    subq $8, %rsp
+    movq %r11, (%rsp)
+    xorq %edx, %edx
+    xorq %eax, %eax
+.L1:
+    leaq (%rsi, %rax, 8), %r11
+    movq (%r11), %rcx
+    cbe $0, %rcx, .L3
+    cbe %rdi, %rcx, .L2
+    leaq (%rsi, %rdx, 8), %r11
+    movq %rcx, (%r11)
+    addq $1, %rdx
+.L2:
+    addq $1, %rax
+jmp .L1 .L3:
+    leaq (%rsi, %rdx, 8), %r11
+    movq $0, %r10
+    movq %r10, (%r11)
+    subq %rdx, %rax
+    movq (%rsp), %r11
+    addq $8, %rsp
+    ret %r11
