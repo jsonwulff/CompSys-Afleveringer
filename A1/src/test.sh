@@ -54,10 +54,47 @@ printf "\x0 \x0 \x0 \x0 \x0 \x0 \x0 \x0 \x0 \x0 \x0 \n" > test_files/null2.input
 printf "\xA1 \n" > test_files/dataone2.input
 
 ### ISO-8859 ##
-printf "\xe5 \xe6 \xf8 \n" > test_files/ISOchar.input
+printf "\xe5\xe6\xf8\n" > test_files/ISOchar1.input
+printf "\xe5\xe6\xf8\n" > test_files/ISOchar2.input
 
 ### UTF ##
-printf "æøå" > test_files/UTF8char.input
+printf "æøå\n" > test_files/UTF_8DKchar.input
+# 1byte edges 00000111 & 01111111
+printf "\x7\n" > test_files/UTF_8_1B_sm.input
+printf "\x7E\n" > test_files/UTF_8_1B_lg.input
+# 2byte edges 11000000 10000000 & 11000000 10111111
+printf "\xC2\x80\n" > test_files/UTF_8_2B_sm_sm.input
+printf "\xC2\xBF\n" > test_files/UTF_8_2B_sm_lg.input
+printf "\xC2a\xBF\n" > test_files/UTF_8_2B_sm_err.input
+
+printf "\xDF\x80\n" > test_files/UTF_8_2B_lg_sm.input
+printf "\xDF\xBF\n" > test_files/UTF_8_2B_lg_lg.input
+printf "\xDFa\xBF\n" > test_files/UTF_8_2B_lg_err.input
+# 3byte edges 11101111 10000000 10000000 & 11011111 10111111
+printf "\xe0\x80\x80\n" > test_files/UTF_8_3B_sm_sm.input
+printf "\xe0\xBF\xBF\n" > test_files/UTF_8_3B_sm_lg.input
+printf "\xe0\xBFa\xBF\n" > test_files/UTF_8_3B_sm_err.input
+
+printf "\xef\x80\x80\n" > test_files/UTF_8_3B_lg_sm.input
+printf "\xef\xBF\xBF\n" > test_files/UTF_8_3B_sm_lg.input
+printf "\xef\xBFa\xBF\n" > test_files/UTF_8_3B_sm_err.input
+#4byte edges 11110111 & 11110000
+printf "\xf0\x80\x80\x80\n" > test_files/UTF_8_4B_sg_sm.input
+printf "\xf0\xBF\xBF\xBF\n" > test_files/UTF_8_4B_sm_lg.input
+printf "\xf0\xBF\xBFa\xBF\n" > test_files/UTF_8_4B_sm_err.input
+
+printf "\xf7\x80\x80\x80\n" > test_files/UTF_8_4B_lg_sm.input
+printf "\xf7\xBF\xBF\xBF\n" > test_files/UTF_8_4B_lg_lg.input
+printf "\xf7\xBF\xBFa\xBF\n" > test_files/UTF_8_4B_lg_err.input
+
+
+### Little-endian UTF-16 Unicode text ###
+printf "\xFF\xFE\x0a\x00\x61\x00" > test_files/UTF_16_LE1.input
+printf "\xFF\xFE\x0a\x00\xbb\xef\x68\xbf\x6c\x61\x6f\x6c\xc3\x20\xc3\xa6\x20\xb8\xa5\xc3\x77\x20\x72\x6f\x64\x6c" > test_files/UTF_16_LE2.input
+
+### Big-endian UTF-16 Unicode text ###
+printf "\xfe\xff\x68\x0a\x00\x0a" > test_files/UTF_16_BE1.input
+printf "\xfe\xff\x68\x0a\x6c\x61\x6f\x6c\x77\x20\x72\x6f\x64\x6c\x00\x0a" > test_files/UTF_16_BE2.input
 
 
 echo "Running the tests.."

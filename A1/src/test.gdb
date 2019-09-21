@@ -7,7 +7,10 @@ p /t 0x80
 p /u 0x80
 p /x 0b110
 p /u 0b110
-p (128 + 1)
+#
+p "Testing UTF 16 BOM byte"
+p BOM_FF(255) !=0
+p BOM_FE(254) !=0
 #
 p "Some basic tests.."
 p UTF8_CONT(128) != 0

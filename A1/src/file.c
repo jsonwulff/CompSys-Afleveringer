@@ -4,6 +4,9 @@
 #include <string.h>  //  strerror
 
 // #define UTF8_CONT(b) (((b >= 192) && (b <= 223)) ? b : 0 )
+#define BOM_FF(b) (((b) == 0xff) ? (1) : (0))
+#define BOM_FE(b) (((b) == 0xfe) ? (1) : (0))
+#define UTF8_1B(b) ((((b) >> 7) == 0) ? (1) : (0))
 #define UTF8_CONT(b) ((((b) >> 6) == 2) ? (1) : (0))
 #define UTF8_2B(b) ((((b) >> 5) == 6) ? (1) : (0))
 #define UTF8_3B(b) ((((b) >> 4) == 14) ? (1) : (0))
@@ -36,7 +39,7 @@ int print_error(const char* path, int max_length, int errnum) {
                  (int)(max_length - strlen(path)), " ", strerror(errnum));
 }
 
-int getMaxLength2(int nPaths, char* path[]) {
+int getMaxLength(int nPaths, char* path[]) {
   int max_length = 0;
   for (int i = 1; i < nPaths; i++) {
     int stringLength = strlen(path[i]);
@@ -52,6 +55,9 @@ void getFileType(char* path, int max_length) {
 
   if (f != NULL) {
     int i = 0;
+    unsigned char firstByte = 0;
+    unsigned char nContByte = 0;
+    // // char isLittleEndian = 0;
 
     while (1) {
       unsigned char b;
@@ -67,18 +73,55 @@ void getFileType(char* path, int max_length) {
         break;
       }
 
-      if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E)) {
-        cur_type = ASCII;
-      } else if ((b >= 0x07 && b <= 0x0D) || b == 0x1B ||
-                 (b >= 0x20 && b <= 0x7E) || (b >= 0xA0)) {
-        cur_type = ISO8859;
-        break;
+      // UTF Endian check
+      if (((BOM_FF(b) == 1) || (BOM_FE(b) == 1))) {
+        if ((BOM_FF(firstByte) == 1)) {
+          cur_type = LEUTF16;
+          break;
+        } else if ((BOM_FE(firstByte) == 1)) {
+          cur_type = BEUTF16;
+          break;
+        }
+        firstByte = b;
+        continue;
+      }
+
+      if ((UTF8_2B(b) == 1) || (UTF8_3B(b) == 1) || (UTF8_4B(b) == 1)) {
+        nContByte = 0;
+        firstByte = b;
+        continue;
+      }
+      if ((UTF8_CONT(b) == 1) && (firstByte != 0)) {
+        nContByte++;
+        if ((UTF8_2B(firstByte) == 1) && (nContByte == 1)) {
+          cur_type = UTF8;
+          break;
+        } else if ((UTF8_3B(firstByte) == 1) && (nContByte == 2)) {
+          cur_type = UTF8;
+          break;
+        } else if ((UTF8_4B(firstByte) == 1) && (nContByte == 3)) {
+          cur_type = UTF8;
+          break;
+        }
+        continue;
+      }
+
+      // ASCII
+      if ((b >= 0x07 && b <= 0x0D) || b == 0x1B || (b >= 0x20 && b <= 0x7E) ||
+          (b >= 0xA0)) {
+        if (b >= 0xA0) {
+          cur_type = ISO8859;
+          break;
+        } else if (cur_type != ISO8859) {
+          cur_type = ASCII;
+        }
       } else {
         cur_type = DATA;
         break;
       }
 
       i++;
+      firstByte = 0;
     }
     fprintf(stdout, "%s:%*s%s\n", path, (int)(max_length - strlen(path)), " ",
             FILE_TYPE_STRINGS[cur_type]);
@@ -94,7 +137,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Usage: file path\n");
     retval = EXIT_FAILURE;
   } else {
-    int max_length = getMaxLength2(argc, argv) + 1;
+    int max_length = getMaxLength(argc, argv) + 1;
     // Put this for loop in the getFileType function
     for (int i = 1; i < argc; i++) {
       getFileType(argv[i], max_length);
