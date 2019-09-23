@@ -3,7 +3,6 @@
 #include <stdlib.h>  // EXIT_FAILURE, EXIT_SUCCESS.
 #include <string.h>  //  strerror
 
-// #define UTF8_CONT(b) (((b >= 192) && (b <= 223)) ? b : 0 )
 #define BOM_FF(b) (((b) == 0xff) ? (1) : (0))
 #define BOM_FE(b) (((b) == 0xfe) ? (1) : (0))
 #define UTF8_1B(b) ((((b) >> 7) == 0) ? (1) : (0))
