@@ -6,10 +6,10 @@ bool bool_not(bool a) { return !a; }
 
 val shift_left(val a, val v) { return from_int(a.val << v.val); }
 val shift_right_unsigned(val a, val v) { return from_int(a.val >> v.val); }
-val shift_right_signed(val a, val v) { return from_int(((unsigned)a.val) >> v.val); }
+val shift_right_signed(val a, val v) { return from_int(((int64_t)a.val) >> v.val); }
 
 val mul(val a, val b) { return from_int(a.val * b.val); }
-val imul(val a, val b) { return from_int((unsigned)((signed)a.val * (signed)b.val)); }
+val imul(val a, val b) { return from_int((uint64_t)((int64_t)a.val * (int64_t)b.val)); }
 
 bool comparator(val comparison, val op_a, val op_b) {
     val neg_b = neg(64, op_b);
