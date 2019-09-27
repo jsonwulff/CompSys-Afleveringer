@@ -1,3 +1,4 @@
 test:
-    movq $1, %rbx
+    movq $1, %rdx
+    movq %rdi, %rax
     ret %rax

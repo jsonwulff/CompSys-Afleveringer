@@ -79,26 +79,25 @@ int main(int argc, char* argv[]) {
     /*** DECODE ***/
     // read 4 bit values
     val major_op = pick_bits(4, 4, inst_bytes[0]);
-    val minor_op = pick_bits(
-        0, 4,
-        inst_bytes[0]);  // <--- essential for further decode, but not used yet
+    val minor_op = pick_bits(0, 4, inst_bytes[0]);
+    // ^ essential for further decode, but not used yet ^
 
     val reg_d = pick_bits(4, 4, inst_bytes[1]);
     val reg_s = pick_bits(0, 4, inst_bytes[1]);
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);
-    bool is_reg_movq = is(REG_MOVQ, major_op);
-    bool is_imm_movq = is(IMM_MOVQ, major_op);
+    bool is_return = is(RETURN, major_op);      // 0000
+    bool is_reg_movq = is(REG_MOVQ, major_op);  // 0010
+    bool is_imm_movq = is(IMM_MOVQ, major_op);  // 0110
 
     // Our own MOVQ
-    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);
-    bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);
+    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011
+    bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);  // 0111
 
     // determine instruction size
-    bool size2 = is_return || is_reg_movq;
-    bool size6 = is_imm_movq || is_reg_movq_mem || is_imm_movq_mem;
+    bool size2 = is_return || is_reg_movq || is_reg_movq_mem;  // 0000 || 0010 || 0011
+    bool size6 = is_imm_movq || is_imm_movq_mem; // 0110 || 0111
 
     val ins_size = or (use_if(size2, from_int(2)), use_if(size6, from_int(6)));
 
@@ -113,9 +112,8 @@ int main(int argc, char* argv[]) {
     //
     // read immediates based on instruction type
     val imm_offset_2 =
-        or
-        (or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
-         or (put_bits(16, 8, inst_bytes[4]), put_bits(24, 8, inst_bytes[5])));
+        or(or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
+           or (put_bits(16, 8, inst_bytes[4]), put_bits(24, 8, inst_bytes[5])));
     val imm_i = imm_offset_2;  // <--- could be more
     val sext_imm_i = sign_extend(31, imm_i);
 
