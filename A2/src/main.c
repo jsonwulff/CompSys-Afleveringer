@@ -28,6 +28,12 @@
 #define JMP 0xF
 #define CALL 0xE
 
+// minor op codes
+#define LOAD 0x1        // movq (s),d
+#define STORE 0x9       // movq d,(s)
+#define LOAD_IMM 0x5    // movq i(s),d
+#define STORE_IMM 0x13  // movq movq d,i(s)
+
 int main(int argc, char* argv[]) {
   // Check command line parameters.
   if (argc < 2) error("missing name of programfile to simulate");
@@ -87,17 +93,20 @@ int main(int argc, char* argv[]) {
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);      // 0000
-    bool is_reg_movq = is(REG_MOVQ, major_op);  // 0010
-    bool is_imm_movq = is(IMM_MOVQ, major_op);  // 0110
-
-    // Our own MOVQ
+    bool is_return = is(RETURN, major_op);              // 0000 - IMMPLEMENTED
+    bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
     bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011
+    bool is_imm_movq = is(IMM_MOVQ, major_op);          // 0110 - IMPLEMENTED
     bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);  // 0111
 
+    // read minor operation code
+    bool is_load = is(LOAD, minor_op);    // 0001
+    bool is_store = is(STORE, minor_op);  // 1001
+
     // determine instruction size
-    bool size2 = is_return || is_reg_movq || is_reg_movq_mem;  // 0000 || 0010 || 0011
-    bool size6 = is_imm_movq || is_imm_movq_mem; // 0110 || 0111
+    bool size2 =
+        is_return || is_reg_movq || is_reg_movq_mem;  // 0000 || 0010 || 0011
+    bool size6 = is_imm_movq || is_imm_movq_mem;      // 0110 || 0111
 
     val ins_size = or (use_if(size2, from_int(2)), use_if(size6, from_int(6)));
 
@@ -106,14 +115,16 @@ int main(int argc, char* argv[]) {
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
-    bool reg_wr_enable = is_reg_movq || is_imm_movq;
+    bool reg_wr_enable =
+        is_reg_movq || is_imm_movq || (is_reg_movq_mem && is_load);
 
     // Datapath:
     //
     // read immediates based on instruction type
     val imm_offset_2 =
-        or(or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
-           or (put_bits(16, 8, inst_bytes[4]), put_bits(24, 8, inst_bytes[5])));
+        or
+        (or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
+         or (put_bits(16, 8, inst_bytes[4]), put_bits(24, 8, inst_bytes[5])));
     val imm_i = imm_offset_2;  // <--- could be more
     val sext_imm_i = sign_extend(31, imm_i);
 
@@ -127,7 +138,8 @@ int main(int argc, char* argv[]) {
 
     // perform calculations
     // not really any calculations yet!
-    // val agen_result = ....   // generate address for memory access
+    // Address generator
+    val agen_result = reg_out_b;  // generate address for memory access
     // ....
 
     // address of succeeding instruction in memory
@@ -140,18 +152,22 @@ int main(int argc, char* argv[]) {
     /*** MEMORY ***/
     // read from memory if needed
     // Not implemented yet!
-    // val mem_out = memory_read(mem, agen_result, is_load);
+    val mem_out = memory_read(mem, agen_result, is_load);
+
+    val mem_write = reverse_bytes(8, mem_out);
 
     /*** WRITE ***/
     // choose result to write back to register
-    val datapath_result = op_b;
+    val datapath_result =
+        or (use_if(!is_reg_movq_mem, op_b), use_if(is_reg_movq_mem, mem_write));
+    // val datapath_result = op_b;
 
     // write to register if needed
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);
 
     // write to memory if needed
     // Not implemented yet!
-    // memory_write(mem, agen_result, reg_out_a, is_store);
+    memory_write(mem, agen_result, reg_out_a, is_store);
 
     // update program counter
     ip_write(ip, pc_next, true);

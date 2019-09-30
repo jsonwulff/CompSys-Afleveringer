@@ -1,0 +1,4 @@
+test:
+    movq (%rdi), %r8
+    movq %r8, %rsi
+    ret %rsi

@@ -6,3 +6,4 @@ test_files
 src.zip
 .*.pdf
 sim
+test_runs/*
