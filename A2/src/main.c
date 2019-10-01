@@ -95,13 +95,15 @@ int main(int argc, char* argv[]) {
     // read major operation code
     bool is_return = is(RETURN, major_op);              // 0000 - IMMPLEMENTED
     bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
-    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011
+    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011 - IMPLEMENTED
     bool is_imm_movq = is(IMM_MOVQ, major_op);          // 0110 - IMPLEMENTED
     bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);  // 0111
 
     // read minor operation code
-    bool is_load = is(LOAD, minor_op);    // 0001
-    bool is_store = is(STORE, minor_op);  // 1001
+    bool is_load = is(LOAD, minor_op);            // 0001
+    bool is_store = is(STORE, minor_op);          // 1001
+    bool is_load_imm = is(LOAD_IMM, minor_op);    // 0101
+    bool is_store_imm = is(STORE_IMM, minor_op);  // 1101
 
     // determine instruction size
     bool size2 =
@@ -115,8 +117,9 @@ int main(int argc, char* argv[]) {
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
-    bool reg_wr_enable =
-        is_reg_movq || is_imm_movq || (is_reg_movq_mem && is_load);
+    bool reg_wr_enable = is_reg_movq || is_imm_movq ||
+                         (is_reg_movq_mem && is_load) ||
+                         (is_imm_movq_mem && is_load_imm);
 
     // Datapath:
     //
@@ -139,8 +142,10 @@ int main(int argc, char* argv[]) {
     // perform calculations
     // not really any calculations yet!
     // Address generator
-    val agen_result = reg_out_b;  // generate address for memory access
-    // ....
+    // generate address for memory access
+    val agen = add(reg_out_b, sext_imm_i);
+    val agen_result =
+        or (use_if(!is_imm_movq_mem, reg_out_b), use_if(is_imm_movq_mem, agen));
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
@@ -152,14 +157,16 @@ int main(int argc, char* argv[]) {
     /*** MEMORY ***/
     // read from memory if needed
     // Not implemented yet!
-    val mem_out = memory_read(mem, agen_result, is_load);
+    val mem_out = memory_read(mem, agen_result, (is_load || is_load_imm));
 
     val mem_write = reverse_bytes(8, mem_out);
 
     /*** WRITE ***/
+    /*** RESULT SELECT ***/
     // choose result to write back to register
     val datapath_result =
-        or (use_if(!is_reg_movq_mem, op_b), use_if(is_reg_movq_mem, mem_write));
+        or (use_if(reg_wr_enable, op_b),
+            use_if((is_reg_movq_mem || is_imm_movq_mem), mem_write));
     // val datapath_result = op_b;
 
     // write to register if needed
