@@ -1,0 +1,3 @@
+test:
+  imulq %rdx, %rdi
+  ret %rax

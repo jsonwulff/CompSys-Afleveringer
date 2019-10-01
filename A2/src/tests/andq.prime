@@ -1,0 +1,3 @@
+test:
+  andq %rdx, %rdi
+  ret %rax
