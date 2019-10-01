@@ -92,14 +92,15 @@ int main(int argc, char* argv[]) {
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);              // 0000 - IMMPLEMENTED
-    bool is_reg_arithm = is(REG_ARITHMETIC, major_op);  // 0001
+    bool is_return = is(RETURN, major_op);  // 0000 - IMMPLEMENTED
+    bool is_reg_arithmetic = is(REG_ARITHMETIC, major_op);  // 0001
     bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
     bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011 - IMPLEMENTED
     bool is_imm_movq = is(IMM_MOVQ, major_op);          // 0110 - IMPLEMENTED
     bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);  // 0111
     bool is_leaq2 = is(LEAQ2, major_op);                // 1000 - IMPLEMENTED
     bool is_leaq3 = is(LEAQ3, major_op);                // 1000 - IMPLEMENTED
+    bool is_imm_arithmetic = is(IMM_ARITHMETIC, major_op);
 
     // read minor operation code
     bool is_load = is(LOAD, minor_op);            // 0001
@@ -108,8 +109,8 @@ int main(int argc, char* argv[]) {
     bool is_store_imm = is(STORE_IMM, minor_op);  // 1101
 
     // determine instruction size
-    bool size2 = is_return || is_reg_arithm || is_reg_movq || is_reg_movq_mem ||
-                 is_leaq2;
+    bool size2 = is_return || is_reg_arithmetic || is_reg_movq ||
+                 is_reg_movq_mem || is_leaq2;
     bool size3 = is_leaq3;
     bool size6 = is_imm_movq || is_imm_movq_mem;  // 0110 || 0111
 
@@ -118,11 +119,11 @@ int main(int argc, char* argv[]) {
             or (use_if(size3, from_int(3)), use_if(size6, from_int(6))));
 
     // setting up operand fetch and register read and write for the datapath:
-    bool use_imm = is_imm_movq;
+    bool use_imm = is_imm_movq || is_imm_arithmetic;
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
-    bool reg_wr_enable = is_reg_movq || is_reg_arithm || is_imm_movq ||
+    bool reg_wr_enable = is_reg_movq || is_reg_arithmetic || is_imm_movq ||
                          (is_reg_movq_mem && is_load) ||
                          (is_imm_movq_mem && is_load_imm) || is_leaq2 ||
                          is_leaq3;
@@ -159,11 +160,13 @@ int main(int argc, char* argv[]) {
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
-
+    // val pc_jmp =
     // determine the next position of the program counter
     val pc_next =
         or (use_if(is_return, reg_out_b), use_if(!is_return, pc_incremented));
 
+    // val ox:next =
+    //     or (use_if(is_jump, d), (use_if(!is_jump, pc_next)))
     /*** MEMORY ***/
     // read from memory if needed
     // Not implemented yet!
@@ -175,8 +178,8 @@ int main(int argc, char* argv[]) {
     /*** RESULT SELECT ***/
     // choose result to write back to register
     val datapath_result =
-        or (or (use_if((reg_wr_enable && !is_reg_arithm), op_b),
-                use_if(is_reg_arithm, arithmatic_result)),
+        or (or (use_if((reg_wr_enable && !is_reg_arithmetic), op_b),
+                use_if(is_reg_arithmetic, arithmatic_result)),
             use_if((is_reg_movq_mem || (is_imm_movq_mem && is_load_imm)),
                    mem_write));
     // val datapath_result = op_b;
