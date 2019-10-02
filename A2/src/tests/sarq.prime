@@ -1,3 +1,0 @@
-test:
-  sarq %rdx, %rdi
-  ret %rax

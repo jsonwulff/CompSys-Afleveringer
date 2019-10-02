@@ -1,0 +1,4 @@
+test:
+  imulq $240, %rdi
+  imulq %rdi, %r8
+  ret %rax

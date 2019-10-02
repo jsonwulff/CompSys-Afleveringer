@@ -1,3 +1,0 @@
-test:
-  xorq %rdx, %rdi
-  ret %rax

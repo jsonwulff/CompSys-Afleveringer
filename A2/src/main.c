@@ -32,7 +32,7 @@
 #define LOAD 0x1        // movq (s),d
 #define STORE 0x9       // movq d,(s)
 #define LOAD_IMM 0x5    // movq i(s),d
-#define STORE_IMM 0x13  // movq movq d,i(s)
+#define STORE_IMM 0xD  // movq movq d,i(s)
 
 int main(int argc, char* argv[]) {
   // Check command line parameters.
@@ -76,8 +76,8 @@ int main(int argc, char* argv[]) {
     val pc = ip_read(ip);
     ++instruction_number;
     printf("%d %lx\n", instruction_number, pc.val);
-    /*** FETCH ***/
 
+    /*** FETCH ***/
     // We're fetching 10 bytes in the form of 10 vals with one byte each
     val inst_bytes[10];
     memory_read_into_buffer(mem, pc, inst_bytes, true);
@@ -89,6 +89,9 @@ int main(int argc, char* argv[]) {
 
     val reg_d = pick_bits(4, 4, inst_bytes[1]);
     val reg_s = pick_bits(0, 4, inst_bytes[1]);
+
+    val leaq_z = pick_bits(4, 4, inst_bytes[2]);
+    val leaq_v = pick_bits(4, 4, inst_bytes[2]);
 
     // decode instruction type
     // read major operation code
@@ -114,6 +117,7 @@ int main(int argc, char* argv[]) {
     bool is_store = (is(STORE, minor_op) || is(STORE_IMM, minor_op)) &&
                     (is_reg_movq_mem || is_imm_movq_mem);  // 0001
 
+    // printf("is_store: %d \n", is_store);
     // determine instruction size
     bool size2 = is_return || is_reg_arithmetic || is_reg_movq ||
                  is_reg_movq_mem || is_leaq2;
@@ -172,9 +176,10 @@ int main(int argc, char* argv[]) {
     // perform calculations
     // not really any calculations yet!
     val arithmetic_result = alu_execute(minor_op, reg_out_a, op_b);
+
     // Address generator
     // generate address for memory access
-    val agen = add(reg_out_b, sext_imm_i);  // load
+    val agen = add(reg_out_b, sext_imm_i);
     val agen_result =
         or (use_if(!is_imm_movq_mem, reg_out_b), use_if(is_imm_movq_mem, agen));
 
@@ -194,10 +199,13 @@ int main(int argc, char* argv[]) {
     /*** RESULT SELECT ***/
     // choose result to write back to register
     val datapath_result =
-        or (or (use_if((reg_wr_enable && !is_reg_arithmetic), op_b),
-                use_if((is_reg_arithmetic || is_imm_arithmetic),
-                       arithmetic_result)),
-            use_if((is_reg_movq_mem || is_load), mem_out));
+    or(
+            use_if(is_reg_movq || is_imm_movq, op_b),
+            or(
+                use_if(is_load, mem_out),
+                use_if(is_imm_arithmetic || is_reg_arithmetic, arithmetic_result))
+        );
+
 
     // write to register if needed
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);

@@ -1,3 +1,0 @@
-test:
-  orq %rdx, %rdi
-  ret %rax

@@ -1,0 +1,4 @@
+test:
+  orq $240, %rdi
+  orq %rdi, %r8
+  ret %rax

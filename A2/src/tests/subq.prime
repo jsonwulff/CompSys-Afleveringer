@@ -1,3 +1,0 @@
-test:
-  subq %rdx, %rdi
-  ret %rax

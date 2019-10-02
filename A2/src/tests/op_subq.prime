@@ -1,0 +1,4 @@
+test:
+  subq $240, %rdi
+  subq %rdi, %r8
+  ret %rax

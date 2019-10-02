@@ -1,0 +1,4 @@
+test:
+  sarq $240, %rdi
+  sarq %rdi, %r8
+  ret %rax
