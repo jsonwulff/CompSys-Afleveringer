@@ -118,19 +118,15 @@ int main(int argc, char* argv[]) {
     bool size2 = is_return || is_reg_arithmetic || is_reg_movq ||
                  is_reg_movq_mem || is_leaq2;
     bool size3 = is_leaq3;
-    bool size6 = is_cflow || is_imm_arithmetic || is_imm_movq ||
-                 is_imm_movq_mem || is_leaq6;
-    bool size7 = is_leaq7;
-    bool size10 = is_imm_cbranch;
+    bool size6 =
+        is_imm_movq || is_imm_movq_mem || is_imm_arithmetic;  // 0110 || 0111
 
     val ins_size =
-        or (or (use_if(size2, from_int(2)), use_if(size3, from_int(3))),
-            or (use_if(size6, from_int(6)),
-                or (use_if(size7, from_int(7)), use_if(size10, from_int(10)))));
+        or (use_if(size2, from_int(2)),
+            or (use_if(size3, from_int(3)), use_if(size6, from_int(6))));
 
     // setting up operand fetch and register read and write for the datapath:
-    bool use_imm = is_imm_arithmetic || is_imm_movq || is_imm_movq_mem ||
-                   is_leaq6 || is_leaq7 || is_imm_cbranch;
+    bool use_imm = is_imm_movq || is_imm_arithmetic;
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
@@ -139,26 +135,13 @@ int main(int argc, char* argv[]) {
                          is_leaq2 || is_leaq3;
 
     // Datapath:
-    val offset_2 =
+    //
+    // read immediates based on instruction type
+    val imm_offset_2 =
         or
         (or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
          or (put_bits(16, 8, inst_bytes[4]), put_bits(24, 8, inst_bytes[5])));
-    val offset_3 =
-        or
-        (or (put_bits(0, 8, inst_bytes[3]), put_bits(8, 8, inst_bytes[4])),
-         or (put_bits(16, 8, inst_bytes[5]), put_bits(24, 8, inst_bytes[6])));
-    val offset_6 =
-        or
-        (or (put_bits(0, 8, inst_bytes[6]), put_bits(8, 8, inst_bytes[7])),
-         or (put_bits(16, 8, inst_bytes[8]), put_bits(24, 8, inst_bytes[9])));
-
-    val imm_i = or (use_if((is_imm_movq || is_imm_movq_mem || is_leaq6 ||
-                            is_imm_cbranch || is_imm_arithmetic),
-                           offset_2),
-                    (use_if((is_leaq7), offset_3)));
-
-    val address_p =
-        or (use_if(is_cflow, offset_2), use_if(!is_cflow, offset_6));
+    val imm_i = imm_offset_2;  // <--- could be more
     val sext_imm_i = sign_extend(31, imm_i);
 
     /*** EXECUTE ***/
@@ -171,7 +154,7 @@ int main(int argc, char* argv[]) {
 
     // perform calculations
     // not really any calculations yet!
-    val arithmetic_result = alu_execute(minor_op, reg_out_a, op_b);
+    val arithmatic_result = alu_execute(minor_op, reg_out_a, op_b);
     // Address generator
     // generate address for memory access
     val agen = add(reg_out_b, sext_imm_i);  // load
@@ -180,15 +163,19 @@ int main(int argc, char* argv[]) {
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
-
+    // val pc_jmp =
     // determine the next position of the program counter
     val pc_next =
         or (use_if(is_return, reg_out_b), use_if(!is_return, pc_incremented));
 
+    // val ox:next =
+    //     or (use_if(is_jump, d), (use_if(!is_jump, pc_next)))
     /*** MEMORY ***/
     // read from memory if needed
     // Not implemented yet!
     val mem_out = memory_read(mem, agen_result, is_load);
+
+    val mem_write = reverse_bytes(8, mem_out);
 
     /*** WRITE ***/
     /*** RESULT SELECT ***/
@@ -196,8 +183,9 @@ int main(int argc, char* argv[]) {
     val datapath_result =
         or (or (use_if((reg_wr_enable && !is_reg_arithmetic), op_b),
                 use_if((is_reg_arithmetic || is_imm_arithmetic),
-                       arithmetic_result)),
-            use_if((is_reg_movq_mem || is_load), mem_out));
+                       arithmatic_result)),
+            use_if((is_reg_movq_mem || is_load), mem_write));
+    // val datapath_result = op_b;
 
     // write to register if needed
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);

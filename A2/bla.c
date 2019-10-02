@@ -134,9 +134,7 @@ int main(int argc, char* argv[]) {
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
-    bool reg_wr_enable = is_reg_movq || is_reg_arithmetic ||
-                         is_imm_arithmetic || is_imm_movq || is_load ||
-                         is_leaq2 || is_leaq3;
+    bool reg_wr_enable = !is_return || !is_store || !is_jmp;
 
     // Datapath:
     val offset_2 =
@@ -152,13 +150,15 @@ int main(int argc, char* argv[]) {
         (or (put_bits(0, 8, inst_bytes[6]), put_bits(8, 8, inst_bytes[7])),
          or (put_bits(16, 8, inst_bytes[8]), put_bits(24, 8, inst_bytes[9])));
 
-    val imm_i = or (use_if((is_imm_movq || is_imm_movq_mem || is_leaq6 ||
-                            is_imm_cbranch || is_imm_arithmetic),
-                           offset_2),
-                    (use_if((is_leaq7), offset_3)));
+    val imm_i =
+        or
+        (use_if((is_imm_movq || is_imm_movq_mem || is_leaq6 || is_imm_cbranch),
+                offset_2),
+         (use_if((is_leaq7), offset_3)));
 
     val address_p =
         or (use_if(is_cflow, offset_2), use_if(!is_cflow, offset_6));
+
     val sext_imm_i = sign_extend(31, imm_i);
 
     /*** EXECUTE ***/
@@ -195,10 +195,15 @@ int main(int argc, char* argv[]) {
     // choose result to write back to register
     val datapath_result =
         or (or (use_if((reg_wr_enable && !is_reg_arithmetic), op_b),
-                use_if((is_reg_arithmetic || is_imm_arithmetic),
-                       arithmetic_result)),
+                use_if(is_reg_arithmetic, arithmetic_result)),
             use_if((is_reg_movq_mem || is_load), mem_out));
-
+    // val datapath_result = op_b;
+    // val datapath_result =
+    //     or (or (use_if(is_reg_arithmetic, arithmetic_result),
+    //             use_if(is_load, mem_out)),
+    //         or (use_if(is_reg_movq, op_b),
+    //             use_if((is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7),
+    //                    agen_result)));
     // write to register if needed
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);
 
