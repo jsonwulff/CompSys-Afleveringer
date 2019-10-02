@@ -28,7 +28,14 @@
 #define JMP 0xF
 #define CALL 0xE
 
-// minor op codes
+// Changes these to more fitting descriptions
+// define COPY 0x1
+// define REG_SCALE 0x2
+// define REG_ADD_REG_SCALE 0x3
+// define IMM_COPY 0x4
+// define IMM_ADD_REG 0x5
+// define IMM_ADD_REG_SCALE 0x6
+// define IMM_ADD_REG_ADD_REG_SCALE 0x7
 #define LOAD 0x1        // movq (s),d
 #define STORE 0x9       // movq d,(s)
 #define LOAD_IMM 0x5    // movq i(s),d
@@ -90,12 +97,12 @@ int main(int argc, char* argv[]) {
     val reg_d = pick_bits(4, 4, inst_bytes[1]);
     val reg_s = pick_bits(0, 4, inst_bytes[1]);
 
-    val leaq_z = pick_bits(4, 4, inst_bytes[2]);
-    val leaq_v = pick_bits(4, 4, inst_bytes[2]);
+    val reg_z = pick_bits(4, 4, inst_bytes[2]);
+    val op_v = pick_bits(4, 4, inst_bytes[2]); // scale factor / shift amount
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);  // 0000 - IMMPLEMENTED
+    bool is_return = is(RETURN, major_op);                  // 0000 - IMMPLEMENTED
     bool is_reg_arithmetic = is(REG_ARITHMETIC, major_op);  // 0001 -
     bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
     bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011 - IMPLEMENTED
@@ -113,9 +120,9 @@ int main(int argc, char* argv[]) {
     bool is_jmp = is(JMP, minor_op) && is_cflow;
 
     bool is_load = (is(LOAD, minor_op) || is(LOAD_IMM, minor_op)) &&
-                   (is_reg_movq_mem || is_imm_movq_mem);  // 0001
+                   (is_reg_movq_mem || is_imm_movq_mem);
     bool is_store = (is(STORE, minor_op) || is(STORE_IMM, minor_op)) &&
-                    (is_reg_movq_mem || is_imm_movq_mem);  // 0001
+                    (is_reg_movq_mem || is_imm_movq_mem);
 
     // printf("is_store: %d \n", is_store);
     // determine instruction size
@@ -179,9 +186,15 @@ int main(int argc, char* argv[]) {
 
     // Address generator
     // generate address for memory access
-    val agen = add(reg_out_b, sext_imm_i);
+    val agen_add = add(reg_out_b, sext_imm_i);
+
+    // val address_generate(val op_z_or_d, val op_s, val imm, val shift_amount,
+	// 	     bool sel_z_or_d, bool sel_s, bool sel_imm);
+    // val agen = address_generate();
     val agen_result =
-        or (use_if(!is_imm_movq_mem, reg_out_b), use_if(is_imm_movq_mem, agen));
+        or (
+            use_if(is_reg_movq_mem || is_leaq2, reg_out_b),
+            use_if(is_imm_movq_mem, agen_add));
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
