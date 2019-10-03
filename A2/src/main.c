@@ -29,17 +29,15 @@
 #define CALL 0xE
 
 // Changes these to more fitting descriptions
-// define COPY 0x1
-// define REG_SCALE 0x2
-// define REG_ADD_REG_SCALE 0x3
-// define IMM_COPY 0x4
-// define IMM_ADD_REG 0x5
-// define IMM_ADD_REG_SCALE 0x6
-// define IMM_ADD_REG_ADD_REG_SCALE 0x7
-#define LOAD 0x1        // movq (s),d
-#define STORE 0x9       // movq d,(s)
-#define LOAD_IMM 0x5    // movq i(s),d
-#define STORE_IMM 0xD  // movq movq d,i(s)
+#define COPY 0x1
+#define REG_SCALE 0x2
+#define REG_ADD_REG_SCALE 0x3
+#define IMM_COPY 0x4
+#define IMM_ADD_REG 0x5
+#define IMM_ADD_REG_SCALE 0x6
+#define IMM_ADD_REG_ADD_REG_SCALE 0x7
+#define REG_MEM_COPY 0x9
+#define REG_IMM_MEM_COPY 0xD
 
 int main(int argc, char* argv[]) {
   // Check command line parameters.
@@ -98,11 +96,11 @@ int main(int argc, char* argv[]) {
     val reg_s = pick_bits(0, 4, inst_bytes[1]);
 
     val reg_z = pick_bits(4, 4, inst_bytes[2]);
-    val op_v = pick_bits(4, 4, inst_bytes[2]); // scale factor / shift amount
+    val op_v = pick_bits(0, 4, inst_bytes[2]);  // scale factor / shift amount
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);                  // 0000 - IMMPLEMENTED
+    bool is_return = is(RETURN, major_op);  // 0000 - IMMPLEMENTED
     bool is_reg_arithmetic = is(REG_ARITHMETIC, major_op);  // 0001 -
     bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
     bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011 - IMPLEMENTED
@@ -119,10 +117,18 @@ int main(int argc, char* argv[]) {
     bool is_call = is(CALL, minor_op) && is_cflow;
     bool is_jmp = is(JMP, minor_op) && is_cflow;
 
-    bool is_load = (is(LOAD, minor_op) || is(LOAD_IMM, minor_op)) &&
+    // Decode memory load and store
+    bool is_load = (is(COPY, minor_op) || is(IMM_ADD_REG, minor_op)) &&
                    (is_reg_movq_mem || is_imm_movq_mem);
-    bool is_store = (is(STORE, minor_op) || is(STORE_IMM, minor_op)) &&
-                    (is_reg_movq_mem || is_imm_movq_mem);
+    bool is_store =
+        (is(REG_MEM_COPY, minor_op) || is(REG_IMM_MEM_COPY, minor_op)) &&
+        (is_reg_movq_mem || is_imm_movq_mem);
+
+    // Decode address generation operations
+    bool use_z = is_leaq2 || is_leaq7;
+    bool use_s = is(COPY, minor_op) || is(REG_ADD_REG_SCALE, minor_op) ||
+                 is(IMM_ADD_REG, minor_op) ||
+                 is(IMM_ADD_REG_ADD_REG_SCALE, minor_op);
 
     // printf("is_store: %d \n", is_store);
     // determine instruction size
@@ -179,6 +185,7 @@ int main(int argc, char* argv[]) {
         reg_read_dz);  // <-- will generate warning, as we don't use it yet
     val reg_out_b = reg_read(regs, reg_s);
     val op_b = or (use_if(use_imm, sext_imm_i), use_if(!use_imm, reg_out_b));
+    val reg_out_z = reg_read(regs, reg_z);
 
     // perform calculations
     // not really any calculations yet!
@@ -186,22 +193,26 @@ int main(int argc, char* argv[]) {
 
     // Address generator
     // generate address for memory access
-    val agen_add = add(reg_out_b, sext_imm_i);
+    // val agen_add = add(reg_out_b, sext_imm_i);
 
     // val address_generate(val op_z_or_d, val op_s, val imm, val shift_amount,
-	// 	     bool sel_z_or_d, bool sel_s, bool sel_imm);
-    // val agen = address_generate();
-    val agen_result =
-        or (
-            use_if(is_reg_movq_mem || is_leaq2, reg_out_b),
-            use_if(is_imm_movq_mem, agen_add));
+    //                      bool sel_z_or_d, bool sel_s, bool sel_imm);
+    val agen = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v, use_z,
+                                use_s, use_imm);
+    val agen_result = or (use_if(is_reg_movq_mem || is_leaq2, reg_out_b),
+                          use_if(is_imm_movq_mem, agen));
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
 
+    bool cb = comparator(minor_op, reg_out_a, op_b);
+
     // determine the next position of the program counter
     val pc_next =
-        or (use_if(is_return, reg_out_b), use_if(!is_return, pc_incremented));
+        or
+        (or (use_if(is_jmp, address_p),
+             use_if((is_cflow || is_imm_cbranch) && cb, address_p)),
+         or (use_if(is_return, reg_out_b), use_if(!is_return, pc_incremented)));
 
     /*** MEMORY ***/
     // read from memory if needed
@@ -212,13 +223,12 @@ int main(int argc, char* argv[]) {
     /*** RESULT SELECT ***/
     // choose result to write back to register
     val datapath_result =
-    or(
-            use_if(is_reg_movq || is_imm_movq, op_b),
-            or(
-                use_if(is_load, mem_out),
-                use_if(is_imm_arithmetic || is_reg_arithmetic, arithmetic_result))
-        );
-
+        or (use_if(is_reg_movq || is_imm_movq, op_b),
+            or (use_if(is_load, mem_out),
+                or (use_if(is_imm_arithmetic || is_reg_arithmetic,
+                           arithmetic_result),
+                    use_if(is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7,
+                           agen_result))));
 
     // write to register if needed
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);

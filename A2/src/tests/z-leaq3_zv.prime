@@ -1,4 +1,4 @@
 test:
   movq $8, %rdx
-  leaq (,%rdx,8), %rdi
+  leaq (,%rdx,4), %rdi
   ret %rax
