@@ -201,12 +201,13 @@ int main(int argc, char* argv[]) {
 
     // val address_generate(val op_z_or_d, val op_s, val imm, val shift_amount,
     //                      bool sel_z_or_d, bool sel_s, bool sel_imm);
-    val agen = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v, use_z,
-                                use_s, use_imm);
+    val agen_result = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v,
+                                       use_z, use_s, use_imm);
     // printf("agen: %lx\n", agen.val);
-    val agen_result =
-        or (use_if(is_reg_movq_mem || is_leaq2, reg_out_b),
-            use_if(is_imm_movq_mem || is_leaq3 || is_leaq6 || is_leaq7, agen));
+    // val agen_result =
+    //     or (use_if(is_reg_movq_mem || is_leaq2, agen),
+    //         use_if(is_imm_movq_mem || is_leaq3 || is_leaq6 || is_leaq7,
+    //         agen));
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);

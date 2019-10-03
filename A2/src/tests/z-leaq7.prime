@@ -1,0 +1,5 @@
+test:
+  movq $3, %r11
+  leaq 8(,%rdx,4), %rdi
+  leaq 2(%r11,%rdi,4), %rcx
+  ret %rax
