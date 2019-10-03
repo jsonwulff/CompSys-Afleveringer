@@ -128,9 +128,8 @@ int main(int argc, char* argv[]) {
     bool use_z = is_leaq3 || is_leaq7;
     bool use_s = is(COPY, minor_op) || is(REG_ADD_REG_SCALE, minor_op) ||
                  is(IMM_ADD_REG, minor_op) ||
-                 is(IMM_ADD_REG_ADD_REG_SCALE, minor_op);
-    // printf("use_z: %d\n", use_z);
-    // printf("use_s: %d\n", use_s);
+                 is(IMM_ADD_REG_ADD_REG_SCALE, minor_op) ||
+                 is(REG_IMM_MEM_COPY, minor_op);
 
     // determine instruction size
     bool size2 = is_return || is_reg_arithmetic || is_reg_movq ||
@@ -149,6 +148,7 @@ int main(int argc, char* argv[]) {
     // setting up operand fetch and register read and write for the datapath:
     bool use_imm = is_imm_arithmetic || is_imm_movq || is_imm_movq_mem ||
                    is_leaq6 || is_leaq7 || is_imm_cbranch;
+
     val reg_read_dz = reg_d;
     // - other read port is always reg_s
     // - write is always to reg_d
@@ -178,7 +178,6 @@ int main(int argc, char* argv[]) {
     val address_p =
         or (use_if(is_cflow, offset_2), use_if(!is_cflow, offset_6));
     val sext_imm_i = sign_extend(31, imm_i);
-    // printf("sext_imm_i: %lx\n", sext_imm_i.val);
 
     /*** EXECUTE ***/
     // read registers
@@ -188,8 +187,6 @@ int main(int argc, char* argv[]) {
     val reg_out_b = reg_read(regs, reg_s);
     val op_b = or (use_if(use_imm, sext_imm_i), use_if(!use_imm, reg_out_b));
     val reg_out_z = reg_read(regs, reg_z);
-    // printf("reg_out_b: %lx\n", reg_out_b.val);
-    // printf("reg_out_z: %lx\n", reg_out_z.val);
 
     // perform calculations
     // not really any calculations yet!
@@ -201,13 +198,11 @@ int main(int argc, char* argv[]) {
 
     // val address_generate(val op_z_or_d, val op_s, val imm, val shift_amount,
     //                      bool sel_z_or_d, bool sel_s, bool sel_imm);
-    val agen_result = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v,
-                                       use_z, use_s, use_imm);
-    // printf("agen: %lx\n", agen.val);
-    // val agen_result =
-    //     or (use_if(is_reg_movq_mem || is_leaq2, agen),
-    //         use_if(is_imm_movq_mem || is_leaq3 || is_leaq6 || is_leaq7,
-    //         agen));
+    val agen = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v, use_z,
+                                use_s, use_imm);
+    val agen_result =
+        or (use_if(is_reg_movq_mem || is_leaq2, op_b),
+            use_if(is_imm_movq_mem || is_leaq3 || is_leaq6 || is_leaq7, agen));
 
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
@@ -249,6 +244,14 @@ int main(int argc, char* argv[]) {
 
     // terminate when returning to zero
     if (pc_next.val == 0 && is_return) stop = true;
+    printf("is_jmp: %d\n", is_jmp);
+    printf("address_p: %lx\n", address_p.val);
+    printf("pc_next: %lx\n", pc_next);
+    // printf("sext_imm_i: %lx\n", sext_imm_i.val);
+    // printf("reg_out_a: %lx\n", reg_out_a.val);
+    // printf("reg_out_b: %lx\n", reg_out_b.val);
+    // printf("agen_result: %lx\n", agen_result.val);
+    // printf("mem_out: %d\n", mem_out);
   }
   memory_destroy(mem);
   regs_destroy(regs);

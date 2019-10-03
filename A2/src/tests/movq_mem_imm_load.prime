@@ -1,4 +1,6 @@
 test:
+    movq $8, %rdi
+    movq $8, %r8
     movq 4(%rdi), %r8
     movq %r8, %rsi
     ret %rsi
