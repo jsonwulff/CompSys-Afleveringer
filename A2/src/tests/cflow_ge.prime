@@ -1,7 +1,15 @@
 test:
-    movq $8, %rdi
-    cbge $1, %rdi, .L3
-    ret %rax
-.L3:
-    addq $10, %rdi
-    ret %rax
+.LFB0:
+    subq $8, %rsp
+    movq %r11, (%rsp)
+    cbge $1, %rdi, .L4
+    movq $0, %eax
+    movq (%rsp), %r11
+    addq $8, %rsp
+    ret %r11
+.L4:
+    movq $1, %eax
+    movq (%rsp), %r11
+    addq $8, %rsp
+    ret %r11
+.LFE0:

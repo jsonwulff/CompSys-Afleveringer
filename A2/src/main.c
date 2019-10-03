@@ -210,11 +210,22 @@ int main(int argc, char* argv[]) {
     bool cb = comparator(minor_op, reg_out_a, op_b);
 
     // determine the next position of the program counter
+    // val pc_next =
+    //     or
+    //     (or (use_if(is_jmp, address_p),
+    //          use_if((is_cflow || is_imm_cbranch) && cb, address_p)),
+    //      or (use_if(is_return, reg_out_b), use_if(!is_return,
+    //      pc_incremented)));
+
     val pc_next =
         or
         (or (use_if(is_jmp, address_p),
              use_if((is_cflow || is_imm_cbranch) && cb, address_p)),
-         or (use_if(is_return, reg_out_b), use_if(!is_return, pc_incremented)));
+         or (use_if(is_return, reg_out_b),
+             use_if(is_reg_arithmetic || is_reg_movq || is_reg_movq_mem ||
+                        is_imm_arithmetic || is_imm_movq || is_imm_movq_mem ||
+                        is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7,
+                    pc_incremented)));
 
     /*** MEMORY ***/
     // read from memory if needed
@@ -244,6 +255,7 @@ int main(int argc, char* argv[]) {
 
     // terminate when returning to zero
     if (pc_next.val == 0 && is_return) stop = true;
+    printf("cb: %d\n", cb);
     printf("is_jmp: %d\n", is_jmp);
     printf("address_p: %lx\n", address_p.val);
     printf("pc_next: %lx\n", pc_next);
