@@ -1,4 +1,0 @@
-test:
-  addq $240, %rdi
-  addq %rdi, %r8
-  ret %rax

@@ -1,4 +1,0 @@
-test:
-  salq $240, %rdi
-  salq %rdi, %r8
-  ret %rax

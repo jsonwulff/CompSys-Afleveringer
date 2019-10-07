@@ -1,8 +1,0 @@
-test:
-    jmp .L3
-    movq $8, %rdi
-    cbge $1, %rdi, .L3
-    ret %rax
-.L3:
-    addq $10, %rdi
-    ret %rax

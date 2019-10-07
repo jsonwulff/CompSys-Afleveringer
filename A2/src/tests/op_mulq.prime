@@ -1,4 +1,0 @@
-test:
-  mulq $240, %rdi
-  mulq %rdi, %r8
-  ret %rax

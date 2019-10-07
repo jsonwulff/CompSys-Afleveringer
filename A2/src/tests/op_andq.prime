@@ -1,4 +1,0 @@
-test:
-  andq $240, %rdi
-  andq %rdi, %r8
-  ret %rax

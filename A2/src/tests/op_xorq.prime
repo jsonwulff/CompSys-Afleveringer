@@ -1,4 +1,0 @@
-test:
-  xorq $240, %rdi
-  xorq %rdi, %r8
-  ret %rax

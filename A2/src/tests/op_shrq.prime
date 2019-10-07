@@ -1,4 +1,0 @@
-test:
-  shrq $240, %rdi
-  shrq %rdi, %r8
-  ret %rax
