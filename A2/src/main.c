@@ -28,7 +28,7 @@
 #define JMP 0xF
 #define CALL 0xE
 
-// Changes these to more fitting descriptions
+// minor opcodes
 #define COPY 0x1
 #define REG_SCALE 0x2
 #define REG_ADD_REG_SCALE 0x3
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
     val inst_bytes[10];
     memory_read_into_buffer(mem, pc, inst_bytes, true);
 
-    /*** DECODE ***/
+    /*** DECODER ***/
     // read 4 bit values
     val major_op = pick_bits(4, 4, inst_bytes[0]);
     val minor_op = pick_bits(0, 4, inst_bytes[0]);
@@ -96,25 +96,24 @@ int main(int argc, char* argv[]) {
     val reg_s = pick_bits(0, 4, inst_bytes[1]);
 
     val reg_z = pick_bits(4, 4, inst_bytes[2]);
-    val op_v = pick_bits(0, 4, inst_bytes[2]);  // scale factor / shift amount
+    val op_v = pick_bits(0, 4, inst_bytes[2]);
 
     // decode instruction type
     // read major operation code
-    bool is_return = is(RETURN, major_op);  // 0000 - IMMPLEMENTED
-    bool is_reg_arithmetic = is(REG_ARITHMETIC, major_op);  // 0001 -
-    bool is_reg_movq = is(REG_MOVQ, major_op);          // 0010 - IMPLEMENTED
-    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);  // 0011 - IMPLEMENTED
-    bool is_cflow = is(CFLOW, major_op);                // 0100
-    bool is_imm_arithmetic = is(IMM_ARITHMETIC, major_op);  // 0101
-    bool is_imm_movq = is(IMM_MOVQ, major_op);          // 0110 - IMPLEMENTED
-    bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);  // 0111
-    bool is_leaq2 = is(LEAQ2, major_op);                // 1000 - IMPLEMENTED
-    bool is_leaq3 = is(LEAQ3, major_op);                // 1001
-    bool is_leaq6 = is(LEAQ6, major_op);                // 1010
-    bool is_leaq7 = is(LEAQ7, major_op);                // 1011
-    bool is_imm_cbranch = is(IMM_CBRANCH, major_op);    // 1111
+    bool is_return = is(RETURN, major_op);
+    bool is_reg_arithmetic = is(REG_ARITHMETIC, major_op);
+    bool is_reg_movq = is(REG_MOVQ, major_op);
+    bool is_reg_movq_mem = is(REG_MOVQ_MEM, major_op);
+    bool is_cflow = is(CFLOW, major_op);
+    bool is_imm_arithmetic = is(IMM_ARITHMETIC, major_op);
+    bool is_imm_movq = is(IMM_MOVQ, major_op);
+    bool is_imm_movq_mem = is(IMM_MOVQ_MEM, major_op);
+    bool is_leaq2 = is(LEAQ2, major_op);
+    bool is_leaq3 = is(LEAQ3, major_op);
+    bool is_leaq6 = is(LEAQ6, major_op);
+    bool is_leaq7 = is(LEAQ7, major_op);
+    bool is_imm_cbranch = is(IMM_CBRANCH, major_op);
 
-    bool is_call = is(CALL, minor_op) && is_cflow;
     bool is_jmp = is(JMP, minor_op) && is_cflow;
 
     // Decode memory load and store
@@ -145,18 +144,16 @@ int main(int argc, char* argv[]) {
             or (use_if(size6, from_int(6)),
                 or (use_if(size7, from_int(7)), use_if(size10, from_int(10)))));
 
-    // setting up operand fetch and register read and write for the datapath:
     bool use_imm = is_imm_arithmetic || is_imm_movq || is_imm_movq_mem ||
                    is_leaq6 || is_leaq7 || is_imm_cbranch;
 
     val reg_read_dz = reg_d;
-    // - other read port is always reg_s
-    // - write is always to reg_d
+
     bool reg_wr_enable = is_reg_movq || is_reg_arithmetic ||
                          is_imm_arithmetic || is_imm_movq || is_load ||
                          is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
 
-    // Datapath:
+    // Datapaths:
     val offset_2 =
         or
         (or (put_bits(0, 8, inst_bytes[2]), put_bits(8, 8, inst_bytes[3])),
@@ -174,10 +171,10 @@ int main(int argc, char* argv[]) {
                             is_imm_cbranch || is_imm_arithmetic),
                            offset_2),
                     (use_if((is_leaq7), offset_3)));
+    val sext_imm_i = sign_extend(31, imm_i);
 
     val address_p =
         or (use_if(is_cflow, offset_2), use_if(!is_cflow, offset_6));
-    val sext_imm_i = sign_extend(31, imm_i);
 
     /*** EXECUTE ***/
     // read registers
@@ -185,19 +182,15 @@ int main(int argc, char* argv[]) {
         regs,
         reg_read_dz);  // <-- will generate warning, as we don't use it yet
     val reg_out_b = reg_read(regs, reg_s);
-    val op_b = or (use_if(use_imm, sext_imm_i), use_if(!use_imm, reg_out_b));
     val reg_out_z = reg_read(regs, reg_z);
 
-    // perform calculations
-    // not really any calculations yet!
+    // OP mux
+    val op_b = or (use_if(use_imm, sext_imm_i), use_if(!use_imm, reg_out_b));
+
+    // perform arithmic calculations
     val arithmetic_result = alu_execute(minor_op, reg_out_a, op_b);
 
     // Address generator
-    // generate address for memory access
-    // val agen_add = add(reg_out_b, sext_imm_i);
-
-    // val address_generate(val op_z_or_d, val op_s, val imm, val shift_amount,
-    //                      bool sel_z_or_d, bool sel_s, bool sel_imm);
     val agen = address_generate(reg_out_z, reg_out_b, sext_imm_i, op_v, use_z,
                                 use_s, use_imm);
     val agen_result =
@@ -207,16 +200,10 @@ int main(int argc, char* argv[]) {
     // address of succeeding instruction in memory
     val pc_incremented = add(pc, ins_size);
 
+    // Perform CFLOW comparision
     bool cb = comparator(minor_op, reg_out_a, op_b);
 
-    // determine the next position of the program counter
-    // val pc_next =
-    //     or
-    //     (or (use_if(is_jmp, address_p),
-    //          use_if((is_cflow || is_imm_cbranch) && cb, address_p)),
-    //      or (use_if(is_return, reg_out_b), use_if(!is_return,
-    //      pc_incremented)));
-
+    // IP select
     val pc_next =
         or
         (or (use_if(is_jmp, address_p),
@@ -229,12 +216,9 @@ int main(int argc, char* argv[]) {
 
     /*** MEMORY ***/
     // read from memory if needed
-    // Not implemented yet!
     val mem_out = memory_read(mem, agen_result, is_load);
 
-    /*** WRITE ***/
     /*** RESULT SELECT ***/
-    // choose result to write back to register
     val datapath_result =
         or (use_if(is_reg_movq || is_imm_movq, op_b),
             or (use_if(is_load, mem_out),
@@ -247,7 +231,6 @@ int main(int argc, char* argv[]) {
     reg_write(regs, reg_d, datapath_result, reg_wr_enable);
 
     // write to memory if needed
-    // Not implemented yet!
     memory_write(mem, agen_result, reg_out_a, is_store);
 
     // update program counter
@@ -255,17 +238,10 @@ int main(int argc, char* argv[]) {
 
     // terminate when returning to zero
     if (pc_next.val == 0 && is_return) stop = true;
-    printf("cb: %d\n", cb);
-    printf("is_jmp: %d\n", is_jmp);
-    printf("address_p: %lx\n", address_p.val);
-    printf("pc_next: %lx\n", pc_next);
-    // printf("sext_imm_i: %lx\n", sext_imm_i.val);
-    // printf("reg_out_a: %lx\n", reg_out_a.val);
-    // printf("reg_out_b: %lx\n", reg_out_b.val);
-    // printf("agen_result: %lx\n", agen_result.val);
-    // printf("mem_out: %d\n", mem_out);
   }
+
   memory_destroy(mem);
+
   regs_destroy(regs);
 
   printf("Done\n");
