@@ -1,0 +1,4 @@
+test:
+  movq $255, %rdx
+  movq %rdx, %rdi
+  ret %rax

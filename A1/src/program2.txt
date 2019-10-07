@@ -1,0 +1,23 @@
+p2:
+    subq $8, %rsp                   // $8 = 8                   %rsp = stack pointer
+    movq %r11, (%rsp)               // %r11 = caller saved      %rsp = stack pointer
+    xorq %edx, %edx                 // %edx = 3rd arg 32bit     %edx = 3rd arg 32bit
+    xorq %eax, %eax                 // %eax = Return 32 bit     %eax = Return val 32 bit
+.L1:
+    leaq (%rsi, %rax, 8), %r11      // %rsi = 2nd arg           %rax = Return value        %r11 = Caller saved
+    movq (%r11), %rcx               // %r11 = Caller saved      %rcx = 4th arg
+    cbe $0, %rcx, .L3               //                          %rcx = 4th arg
+    cbe %rdi, %rcx, .L2             // %rdi = 1st arg           %rcx = 4th arg
+    leaq (%rsi, %rdx, 8), %r11      // %rsi = 2nc arg           %rdx = 3rd arg              %r11 = Caller saved
+    movq %rcx, (%r11)               // %rcx = 4th arg           %r11 = Caller saved
+    addq $1, %rdx                   //                          %rdx = 3rd arg              //Look like a counter/iterator
+.L2:
+    addq $1, %rax                   // %rax = Return value
+jmp .L1 .L3:
+    leaq (%rsi, %rdx, 8), %r11      // %rsi = 2nd arg           %rdx = 3rd arg
+    movq $0, %r10                   //                          %r10 = Caller saved
+    movq %r10, (%r11)               // %r10 = Caller saved      %r11 = Caller saved
+    subq %rdx, %rax                 // %rdx = 3rd arg           %rax = Return value
+    movq (%rsp), %r11               // %rsp = stack pointer     %r11 = caller saved
+    addq $8, %rsp                   //                          %rsp = stack pointer
+    ret %r11                        // %caller saved

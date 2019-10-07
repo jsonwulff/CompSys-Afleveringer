@@ -1,0 +1,4 @@
+test:
+  leaq 8, %rdi
+  leaq 8(%rdi), %rcx
+  ret %rax
