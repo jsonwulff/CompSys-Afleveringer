@@ -3,16 +3,16 @@
 
 #define Swap(tab,x,y) { long tmp = tab[x]; tab[x] = tab[y]; tab[y] = tmp; }
 
-inline void stupid_sort(long array[], long num_elem) {
+inline void insertion_sort(long array[], long num_elem) {
 
-  for (long i = 0; i < num_elem; ++i) {
-    for (long j = i + 1; j < num_elem; j++) {
-      if (array[i] > array[j]) {
-        long tmp = array[i];
-        array[i] = array[j];
-        array[j] = tmp;
-      }
+  for (long i = 1; i <= num_elem; ++i) {
+    long x = array[i];
+    long j = i - 1;
+    while (j >= 0 && array[j] > x) {
+      array[j + 1] = array[j];
+      --j;
     }
+    array[j + 1] = x;
   }
 }
 
@@ -20,7 +20,7 @@ inline void stupid_sort(long array[], long num_elem) {
 void quick_sort(long array[], long lo, long hi) {
   if (lo >= hi) return;
   if (hi - lo < 8) {
-    stupid_sort(array + lo, hi - lo);
+    insertion_sort(array + lo, hi - lo);
     return;
   }
   long mid = (lo + hi) >> 1;
