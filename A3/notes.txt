@@ -1,0 +1,13 @@
+primify - prerf:
+Indeholder modeller af micro architecture afvikler afvikligerplots.
+
+Indeholder modeler af cache-
+
+Forskellige modeller / konfigurationer kan vælges.
+
+A3:
+
+Afsnit der handler om at sammenligne performance af forskellig kode.
+
+Optimer 2 sorterings algortime ift. reference lokalitetm
+1 lav niveau optimering
