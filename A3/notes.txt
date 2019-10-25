@@ -11,3 +11,5 @@ Afsnit der handler om at sammenligne performance af forskellig kode.
 
 Optimer 2 sorterings algortime ift. reference lokalitetm
 1 lav niveau optimering
+
+prerf quicksort.hex run -mem magic -pipe super -show  < runs/run-10.input

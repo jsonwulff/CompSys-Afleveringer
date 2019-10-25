@@ -1,10 +1,15 @@
-#include "io.c"
 #include "alloc.c"
+#include "io.c"
 
-#define Swap(tab,x,y) { long tmp = tab[x]; tab[x] = tab[y]; tab[y] = tmp; }
+#define Swap(tab, x, y) \
+  {                     \
+    long tmp = tab[x];  \
+    tab[x] = tab[y];    \
+    tab[y] = tmp;       \
+  }
 
+// .L22
 inline void insertion_sort(long array[], long num_elem) {
-
   for (long i = 1; i <= num_elem; ++i) {
     long x = array[i];
     long j = i - 1;
@@ -16,11 +21,10 @@ inline void insertion_sort(long array[], long num_elem) {
   }
 }
 
-
 void quick_sort(long array[], long lo, long hi) {
-  if (lo >= hi) return;
-  if (hi - lo < 8) {
-    insertion_sort(array + lo, hi - lo);
+  if (lo >= hi) return;                   // Line 154 .L35 = retrun
+  if (hi - lo < 8) {                      // Line 155-167
+    insertion_sort(array + lo, hi - lo);  // .L22
     return;
   }
   long mid = (lo + hi) >> 1;
@@ -60,8 +64,7 @@ long* run() {
   // Run the algorithm
   if (get_input) {
     p = read_array(num_entries);
-  }
-  else {
+  } else {
     p = get_random_array(num_entries);
   }
 
@@ -70,5 +73,5 @@ long* run() {
   if (is_printing) {
     print_array(num_entries, p);
   }
-  return p; // <-- prevent optimization
+  return p;  // <-- prevent optimization
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set path so it matches your installation:
-PRERF=./prerf
+PRERF=prerf
 
 if [ "$#" -ne 2 ]; then
    echo "Running some x86prime programs"
@@ -62,7 +62,7 @@ mkdir -p runs
 rm -f runs/*
 
 # Number for elements to be sorted (to be extended)
-elements="10 100 1000"
+elements="10 100 1000 2000 3000 5000 6000 7000 8000 9000 10000 15000"
 
 # Generate files with inputs for things to be sorted
 for elem in ${elements}

@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -Winline -Og -fno-optimize-sibling-calls
 
-PRIMIFY = ./primify
-PRASM   = ./prasm
-PRUN    = ./prun
-PRERF   = ./prerf
+PRIMIFY = primify
+PRASM   = prasm
+PRUN    = prun
+PRERF   = prerf
 
 PROGRAMS = quicksort heapsort mergesort quicksort_2 mergesort_2
 

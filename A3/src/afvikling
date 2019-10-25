@@ -1,0 +1,67 @@
+Spørgsmål 1
+
+With correct branch prediction
+.L3                     0123456789
+    addq $8, %rdi       FDXW            -- produce(X, %rdi)
+    addq %rdx, %rax     FDXW            -- produce(X, %rdx)
+    movq (%rdi), %rdx    FDXMW          -- depend(X, %rdi) -- produce(M, %rdx)
+    cbne $0, %rdx .L3    FDXXX          -- depend(M, %rdx)
+    addq $8, %rdi         FDXW          -- produce(X, %rdi)
+    addq %rdx, %rax       FDDXW         -- depend(X, %rdx) --produce(X, %rax)
+    movq (%rdi), %rdx      FDXMW        -- produce(M, %rdx)
+    cbne $0, %rdx .L3      FFDXX        -- depend(M, %rdx)
+
+CPI = 7/8
+
+Without correct branch
+.L3                     012345678901234
+    addq $8, %rdi       FDXW            -- produce(X, %rdi)
+    addq %rdx, %rax     FDXW            -- produce(X, %rdx)
+    movq (%rdi), %rdx    FDXMW          -- depend(X, %rdi) -- produce(M, %rdx)
+    cbne $0, %rdx .L3    FDXXX          -- depend(M, %rdx)
+    addq $8, %rdi             FDXW      -- produce(X, %rdi)
+    addq %rdx, %rax           FDXW      -- depend(X, %rdx) --produce(X, %rax)
+    movq (%rdi), %rdx          FDXMW    -- produce(M, %rdx)
+    cbne $0, %rdx .L3          FDXXX      -- depend(M, %rdx)
+
+CPI = 11/8
+
+Spørgsmål 3
+
+With correct branch prediction
+.L3                     012345678901234
+    addq $8, %rdi       F DXW            -- produce(X, %rdi)
+    addq %rdx, %rax     F DXW            -- produce(X, %rdx)
+    movq (%rdi), %rdx    F DXM W         -- depend(X, %rdi) -- produce(M, %rdx)
+    cbne $0, %rdx .L3    F DXXXX          -- depend(M, %rdx)
+    addq $8, %rdi         F DXW          -- produce(X, %rdi)
+    addq %rdx, %rax       F DDXW         -- depend(X, %rdx) --produce(X, %rax)
+    movq (%rdi), %rdx      F DDXM W      -- produce(M, %rdx)
+    cbne $0, %rdx .L3      FF DDXXX        -- depend(M, %rdx)
+
+CPI 10/8
+
+Without correct branch
+.L3                     0123456789012345
+    addq $8, %rdi       F DXW            -- produce(X, %rdi)
+    addq %rdx, %rax     F DXW            -- produce(X, %rdx)
+    movq (%rdi), %rdx    F DXM W         -- depend(X, %rdi) -- produce(M, %rdx)
+    cbne $0, %rdx .L3    F DXXXX          -- depend(M, %rdx)
+    addq $8, %rdi               F DXW          -- produce(X, %rdi)
+    addq %rdx, %rax             F DXW         -- depend(X, %rdx) --produce(X, %rax)
+    movq (%rdi), %rdx            F DXM W      -- produce(M, %rdx)
+    cbne $0, %rdx .L3            F DXXXX        -- depend(M, %rdx)
+
+CPI 15/8
+
+
+Spørgsmål?
+Hvordan skal latenstiderne forstås?
+Er cbe en aritmatisk operation?
+Indforstået at branch prediction er korrekt?
+
+CPI: 7/8 = 0,875
+CPI: 11/8 = 1,375
+
+CPI: 10/8 = 1,25    => 1,25*0,8 = 1
+CPI: 15/8 = 1,875   => 1,875*0,8 = 1,5

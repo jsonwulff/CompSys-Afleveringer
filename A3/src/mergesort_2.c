@@ -1,6 +1,7 @@
-#include "io.c"
 #include "alloc.c"
+#include "io.c"
 
+// Compare and merge
 inline void merge_run(long size_a, long size_b, long from[], long to[]) {
   long* p_a = from;
   long* p_a_limit = from + size_a;
@@ -11,45 +12,53 @@ inline void merge_run(long size_a, long size_b, long from[], long to[]) {
   while (target < target_limit) {
     if (p_a < p_a_limit) {
       if (p_b < p_b_limit) {
-        if (*p_a < *p_b) { *target = *p_a++; }
-        else { *target = *p_b++; }
+        if (*p_a < *p_b) {
+          *target = *p_a++;
+        } else {
+          *target = *p_b++;
+        }
+      } else {
+        *target = *p_a++;
       }
-      else { *target = *p_a++; }
+    } else {
+      *target = *p_b++;
     }
-    else { *target = *p_b++; }
     ++target;
   }
 }
 
-void merge_runs(long total_size, long run_size, long from[], long to[]) {
-  while (total_size) {
-    long run_size_a = run_size;
-    long run_size_b = run_size;
-    if (total_size < run_size_a + run_size_b) 
-      run_size_b = total_size - run_size_a;
+void merge_sort(long total_size, long run_size, long from[], long to[]) {
+  long run_size_a = run_size;
+  long run_size_b = run_size;
+  if (total_size < (run_size_a + run_size_b)) {
+    run_size_b = total_size - run_size_a;
+  }
+  if (total_size < 3) {
+    merge_run(run_size_a, 0, from, to);
+    merge_run(0, run_size_b, from + run_size_a, to + run_size_a);
+    long* tmp = from;
+    from = to;
+    to = tmp;
     merge_run(run_size_a, run_size_b, from, to);
-    from = from + run_size_a + run_size_b;
-    to = to + run_size_a + run_size_b;
-    total_size = total_size - run_size_a - run_size_b;
+
+  } else {
+    merge_sort(run_size_a, (run_size_a + 1) / 2, from, to);
+    merge_sort(run_size_b, (run_size_b + 1) / 2, from + run_size_a,
+               to + run_size_a);
+    long* tmp = from;
+    from = to;
+    to = tmp;
+    merge_run(run_size_a, run_size_b, from, to);
   }
 }
 
-
-void merge_sort(long num_elem, long array[]) {
+void run_merge_sort(long num_elem, long array[]) {
   long* array_a = array;
   long* array_b = allocate(num_elem);
-  long run_size = 1;
-  while (run_size < num_elem) {
-    merge_runs(num_elem, run_size, array_a, array_b);
-    long* tmp = array_a;
-    array_a = array_b;
-    array_b = tmp;
-    // array_a now holds result
-    run_size <<= 1;
-  }
-  if (array_a != array) { // results in wrong array, must copy back
-    for (long k = 0; k < num_elem; ++k)
-      array[k] = array_a[k];
+  merge_sort(num_elem, (num_elem + 1) / 2, array_a, array_b);
+
+  if (array_b != array) {  // results in wrong array, must copy back
+    for (long k = 0; k < num_elem; ++k) array[k] = array_b[k];
   }
 }
 
@@ -69,16 +78,24 @@ long* run() {
   // Run the algorithm
   if (get_input) {
     p = read_array(num_entries);
-  }
-  else {
+  } else {
     p = get_random_array(num_entries);
   }
 
   // Run the algorithm
-  merge_sort(num_entries, p);
+  run_merge_sort(num_entries, p);
 
   if (is_printing) {
     print_array(num_entries, p);
   }
-  return p; // <-- prevent optimization
+  return p;  // <-- prevent optimization
 }
+
+// #include <stdio.h>
+
+// int main() {
+//   long a = 2;
+//   long b = 3;
+//   long retval = b / a;
+//   printf("%lu, %ld", retval, retval);
+// }

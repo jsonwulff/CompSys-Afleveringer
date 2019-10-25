@@ -1,6 +1,7 @@
-#include "io.c"
 #include "alloc.c"
+#include "io.c"
 
+// Compare and merge
 inline void merge_run(long size_a, long size_b, long from[], long to[]) {
   long* p_a = from;
   long* p_a_limit = from + size_a;
@@ -11,21 +12,27 @@ inline void merge_run(long size_a, long size_b, long from[], long to[]) {
   while (target < target_limit) {
     if (p_a < p_a_limit) {
       if (p_b < p_b_limit) {
-        if (*p_a < *p_b) { *target = *p_a++; }
-        else { *target = *p_b++; }
+        if (*p_a < *p_b) {
+          *target = *p_a++;
+        } else {
+          *target = *p_b++;
+        }
+      } else {
+        *target = *p_a++;
       }
-      else { *target = *p_a++; }
+    } else {
+      *target = *p_b++;
     }
-    else { *target = *p_b++; }
     ++target;
   }
 }
 
+// Divide array into mergeable sizes
 void merge_runs(long total_size, long run_size, long from[], long to[]) {
   while (total_size) {
     long run_size_a = run_size;
     long run_size_b = run_size;
-    if (total_size < run_size_a + run_size_b) 
+    if (total_size < run_size_a + run_size_b)
       run_size_b = total_size - run_size_a;
     merge_run(run_size_a, run_size_b, from, to);
     from = from + run_size_a + run_size_b;
@@ -33,7 +40,6 @@ void merge_runs(long total_size, long run_size, long from[], long to[]) {
     total_size = total_size - run_size_a - run_size_b;
   }
 }
-
 
 void merge_sort(long num_elem, long array[]) {
   long* array_a = array;
@@ -47,9 +53,8 @@ void merge_sort(long num_elem, long array[]) {
     // array_a now holds result
     run_size <<= 1;
   }
-  if (array_a != array) { // results in wrong array, must copy back
-    for (long k = 0; k < num_elem; ++k)
-      array[k] = array_a[k];
+  if (array_a != array) {  // results in wrong array, must copy back
+    for (long k = 0; k < num_elem; ++k) array[k] = array_a[k];
   }
 }
 
@@ -69,8 +74,7 @@ long* run() {
   // Run the algorithm
   if (get_input) {
     p = read_array(num_entries);
-  }
-  else {
+  } else {
     p = get_random_array(num_entries);
   }
 
@@ -80,5 +84,5 @@ long* run() {
   if (is_printing) {
     print_array(num_entries, p);
   }
-  return p; // <-- prevent optimization
+  return p;  // <-- prevent optimization
 }

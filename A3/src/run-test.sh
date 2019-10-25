@@ -4,14 +4,14 @@
 set -e
 
 # Change this if working on optimizing heapsort to algorithm=heapsort_2
-algorithm=quicksort_2
+algorithm=mergesort_2
 # Make sure that the latest version of the implementation
 make ${algorithm}
 # Quicksort is needed for reference.
-make quicksort
+make mergesort_2
 
 # The command with which you run x86prime .hex files: You should likely change this variable
-PRUN=./prun
+PRUN=prun
 
 echo "Generating a test_runs directory.."
 mkdir -p test_runs
