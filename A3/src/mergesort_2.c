@@ -90,12 +90,3 @@ long* run() {
   }
   return p;  // <-- prevent optimization
 }
-
-// #include <stdio.h>
-
-// int main() {
-//   long a = 2;
-//   long b = 3;
-//   long retval = b / a;
-//   printf("%lu, %ld", retval, retval);
-// }
