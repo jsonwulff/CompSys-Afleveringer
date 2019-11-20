@@ -4,6 +4,17 @@
 
 #include "job_queue.h"
 
+// Relevant files about threading:
+// 191108/
+// sumbytes.c
+// parcat.c
+// goodcnt.c
+
+// 191118:
+// fibs-threadpool-spin.c
+// fibs-threadpool.c
+// fibs-mt.c
+
 int job_queue_init(struct job_queue *job_queue, int capacity) {
   assert(0);
 }
