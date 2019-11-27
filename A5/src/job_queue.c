@@ -16,17 +16,55 @@
 // fibs-mt.c
 
 int job_queue_init(struct job_queue *job_queue, int capacity) {
-  assert(0);
+  // Error handeling for init cheack that we dont intialize a queue that is already initialluzed
+  // job_queue->jobs = malloc(sizeof(void *) * capacity);
+
+  if(job_queue->init != 1 ){ // Check that job_queue isn't initialized
+    void** jobs = malloc(sizeof(void *) * capacity);
+    if(jobs != NULL) { // Check that malloc didn't fail
+      job_queue->jobs = jobs;
+      job_queue->capacity = capacity;
+      job_queue->cnt = 0;
+      job_queue->init = 1; // REPORT POINT
+      return 0;
+    } else {
+      return 2;
+    }
+  } else {
+    return 1;
+  }
 }
 
 int job_queue_destroy(struct job_queue *job_queue) {
-  assert(0);
+  while(job_queue->cnt != 0) {
+
+  }
+  job_queue->init=0;
+  free(job_queue->jobs);
+  return 0;
 }
 
+
+// REPORT POINT ABOUT FIFO OR STACK PRINCIPLE
 int job_queue_push(struct job_queue *job_queue, void *data) {
-  assert(0);
+    // Does not take race condition into account and doesn't wait
+    if (job_queue->cnt < job_queue->capacity) {
+      job_queue->cnt++;
+      job_queue->jobs[job_queue->cnt] = data;
+      return 0;
+    } else {
+      return 1;
+    }
 }
 
 int job_queue_pop(struct job_queue *job_queue, void **data) {
-  assert(0);
+  if (job_queue->cnt != 0) {
+    *data = job_queue->jobs[job_queue->cnt];
+    job_queue->cnt--;
+    return 0;
+  } else {
+    return 1;
+  }
+
+  // if (job_queue->init == -1){return -1;}
 }
