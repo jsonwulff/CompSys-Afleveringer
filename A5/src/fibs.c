@@ -56,7 +56,9 @@ void* worker(void *arg) {
 
   while (1) {
     char *line;
+    printf("worker\n");
     if (job_queue_pop(jq, (void**)&line) == 0) {
+      printf("hej");
       fib_line(line);
       free(line);
     } else {
@@ -86,7 +88,7 @@ int main(int argc, char * const *argv) {
       err(1, "invalid thread count: %s", argv[2]);
     }
   }
-
+  printf("%d\n", num_threads);
   // Create job queue.
   struct job_queue jq;
   job_queue_init(&jq, 64);
@@ -105,6 +107,7 @@ int main(int argc, char * const *argv) {
   ssize_t line_len;
   size_t buf_len = 0;
   while ((line_len = getline(&line, &buf_len, stdin)) != -1) {
+    printf("getLine\n");
     job_queue_push(&jq, (void*)strdup(line));
   }
   free(line);

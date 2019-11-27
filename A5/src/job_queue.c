@@ -1,6 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "job_queue.h"
 
@@ -22,6 +23,7 @@ int job_queue_init(struct job_queue *job_queue, int capacity) {
   if(job_queue->init != 1 ){ // Check that job_queue isn't initialized
     void** jobs = malloc(sizeof(void *) * capacity);
     if(jobs != NULL) { // Check that malloc didn't fail
+      printf("job queue init\n");
       job_queue->jobs = jobs;
       job_queue->capacity = capacity;
       job_queue->cnt = 0;
@@ -39,6 +41,7 @@ int job_queue_destroy(struct job_queue *job_queue) {
   while(job_queue->cnt != 0) {
 
   }
+  printf("destroy\n");
   job_queue->init=0;
   free(job_queue->jobs);
   return 0;
@@ -49,6 +52,7 @@ int job_queue_destroy(struct job_queue *job_queue) {
 int job_queue_push(struct job_queue *job_queue, void *data) {
     // Does not take race condition into account and doesn't wait
     if (job_queue->cnt < job_queue->capacity) {
+      printf("job queue pushed\n");
       job_queue->cnt++;
       job_queue->jobs[job_queue->cnt] = data;
       return 0;
@@ -58,7 +62,10 @@ int job_queue_push(struct job_queue *job_queue, void *data) {
 }
 
 int job_queue_pop(struct job_queue *job_queue, void **data) {
+  while (job_queue->cnt == 0) {
+  }
   if (job_queue->cnt != 0) {
+    printf("job queue popped\n");
     *data = job_queue->jobs[job_queue->cnt];
     job_queue->cnt--;
     return 0;
