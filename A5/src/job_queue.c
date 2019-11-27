@@ -5,27 +5,13 @@
 
 #include "job_queue.h"
 
-// Relevant files about threading:
-// 191108/
-// sumbytes.c
-// parcat.c
-// goodcnt.c
-
-// 191118:
-// fibs-threadpool-spin.c
-// fibs-threadpool.c
-// fibs-mt.c
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_pushed = PTHREAD_COND_INITIALIZER;
 
 int job_queue_init(struct job_queue *job_queue, int capacity) {
-  // Error handeling for init cheack that we dont intialize a queue that is already initialluzed
-  // job_queue->jobs = malloc(sizeof(void *) * capacity);
-
   if(job_queue->init != 1 ){ // Check that job_queue isn't initialized
     void** jobs = malloc(sizeof(void *) * capacity);
     if(jobs != NULL) { // Check that malloc didn't fail
-      // printf("job queue init\n");
       job_queue->jobs = jobs;
       job_queue->capacity = capacity;
       job_queue->cnt = 0;
@@ -66,15 +52,14 @@ int job_queue_push(struct job_queue *job_queue, void *data) {
 
 int job_queue_pop(struct job_queue *job_queue, void **data) {
 
+  pthread_mutex_lock(&lock);
   if (job_queue->cnt == 0) {
     pthread_cond_wait(&job_pushed, &lock);
   }
   // printf("job queue popped\n");
   *data = job_queue->jobs[job_queue->cnt];
   job_queue->cnt--;
+  pthread_mutex_unlock(&lock);
   return 0;
 
-
-
-  // if (job_queue->init == -1){return -1;}
 }
