@@ -31,7 +31,7 @@ int job_queue_destroy(struct job_queue *job_queue) {
   while(job_queue->cnt != 0) {
 
   }
-  pthread_cond_broadcast(&job_pushed);
+  //pthread_cond_broadcast(&job_pushed);
   printf("destroy\n");
   job_queue->init=0;
   free(job_queue->jobs);
@@ -41,7 +41,7 @@ int job_queue_destroy(struct job_queue *job_queue) {
 
 // REPORT POINT ABOUT FIFO OR STACK PRINCIPLE
 int job_queue_push(struct job_queue *job_queue, void *data) {
-    // Does not take race condition into account and doesn't wait
+
     pthread_mutex_lock(&lock);
     int i = 0;
     if (job_queue->cnt < job_queue->capacity) {
