@@ -6,7 +6,8 @@
 #include "job_queue.h"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t job_pushed = PTHREAD_COND_INITIALIZER;
+pthread_cond_t job_empty = PTHREAD_COND_INITIALIZER;
+pthread_cond_t job_full = PTHREAD_COND_INITIALIZER;
 
 int job_queue_init(struct job_queue *job_queue, int capacity) {
   // Check that job_queue isn't initialized
@@ -31,7 +32,7 @@ int job_queue_destroy(struct job_queue *job_queue) {
   while(job_queue->cnt != 0) {
 
   }
-  //pthread_cond_broadcast(&job_pushed);
+  //pthread_cond_broadcast(&job_empty);
   printf("destroy\n");
   job_queue->init=0;
   free(job_queue->jobs);
@@ -43,24 +44,22 @@ int job_queue_destroy(struct job_queue *job_queue) {
 int job_queue_push(struct job_queue *job_queue, void *data) {
 
     pthread_mutex_lock(&lock);
-    int i = 0;
-    if (job_queue->cnt < job_queue->capacity) {
-      // printf("job queue pushed\n");
-      job_queue->cnt++;
-      job_queue->jobs[job_queue->cnt] = data;
-      pthread_cond_broadcast(&job_pushed);
-    } else {
-      i = 1;
+    while (job_queue->cnt == job_queue->capacity) {
+      pthread_cond_wait(&job_empty, &lock);
     }
+    // printf("job queue pushed\n");
+    job_queue->cnt++;
+    job_queue->jobs[job_queue->cnt] = data;
+    pthread_cond_broadcast(&job_full);
     pthread_mutex_unlock(&lock);
-    return i;
+    return 0;
 }
 
 int job_queue_pop(struct job_queue *job_queue, void **data) {
 
   pthread_mutex_lock(&lock);
   while (job_queue->cnt == 0) {
-    pthread_cond_wait(&job_pushed, &lock);
+    pthread_cond_wait(&job_full, &lock);
   }
   // printf("job queue popped\n");
   *data = job_queue->jobs[job_queue->cnt];
