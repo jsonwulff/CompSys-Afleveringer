@@ -19,6 +19,9 @@ int job_queue_init(struct job_queue *job_queue, int capacity) {
       job_queue->capacity = capacity;
       job_queue->cnt = 0;
       job_queue->init = 1;
+      // pthread_mutex_init(&job_queue->lock, NULL);
+      // pthread_cond_init(&job_queue->job_empty, NULL);
+      // pthread_cond_init(&job_queue->job_full, NULL);
       return 0;
     } else {
       return 2;
@@ -29,13 +32,14 @@ int job_queue_init(struct job_queue *job_queue, int capacity) {
 }
 
 int job_queue_destroy(struct job_queue *job_queue) {
+  pthread_mutex_lock(&lock);
   while(job_queue->cnt != 0) {
-
+    pthread_cond_wait(&job_empty, &lock);
   }
-  //pthread_cond_broadcast(&job_empty);
-  printf("destroy\n");
   job_queue->init=0;
   free(job_queue->jobs);
+  pthread_cond_broadcast(&job_full);
+  pthread_mutex_unlock(&lock);
   return 0;
 }
 
@@ -47,10 +51,9 @@ int job_queue_push(struct job_queue *job_queue, void *data) {
     while (job_queue->cnt == job_queue->capacity) {
       pthread_cond_wait(&job_empty, &lock);
     }
-    // printf("job queue pushed\n");
     job_queue->cnt++;
     job_queue->jobs[job_queue->cnt] = data;
-    pthread_cond_broadcast(&job_full);
+    pthread_cond_signal(&job_full);
     pthread_mutex_unlock(&lock);
     return 0;
 }
@@ -58,13 +61,20 @@ int job_queue_push(struct job_queue *job_queue, void *data) {
 int job_queue_pop(struct job_queue *job_queue, void **data) {
 
   pthread_mutex_lock(&lock);
-  while (job_queue->cnt == 0) {
+  while (job_queue->cnt == 0 && job_queue->init == 1 ) {
     pthread_cond_wait(&job_full, &lock);
   }
-  // printf("job queue popped\n");
-  *data = job_queue->jobs[job_queue->cnt];
-  job_queue->cnt--;
-  pthread_mutex_unlock(&lock);
-  return 0;
+  if (job_queue->init == 1){
+    *data = job_queue->jobs[job_queue->cnt];
+    job_queue->cnt--;
+    pthread_cond_signal(&job_empty);
+    pthread_mutex_unlock(&lock);
+    return 0;
+  } else {
+    printf("I'm dying \n");
+    pthread_mutex_unlock(&lock);
+    return -1;
+  }
+
 
 }
