@@ -100,10 +100,6 @@ int main(int argc, char * const *argv) {
     paths = &argv[2];
   }
 
-  // Create job queue
-  struct job_queue jq;
-  job_queue_init(&jq, 64);
-
   struct workerData wd;
   job_queue_init(&wd.job_queue, 64);
   wd.needle = needle;
