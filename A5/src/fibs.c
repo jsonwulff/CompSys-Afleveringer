@@ -53,7 +53,7 @@ void fib_line(const char *line) {
 // pointer to a job queue.
 void* worker(void *arg) {
   struct job_queue *jq = arg;
-
+  printf("Im a worker\n");
   while (1) {
     char *line;
     if (job_queue_pop(jq, (void**)&line) == 0) {
@@ -89,7 +89,7 @@ int main(int argc, char * const *argv) {
 
   // Create job queue.
   struct job_queue jq;
-  job_queue_init(&jq, 2);
+  job_queue_init(&jq, 64);
 
   // Start up the worker threads.
   pthread_t *threads = calloc(num_threads, sizeof(pthread_t));
@@ -117,8 +117,6 @@ int main(int argc, char * const *argv) {
   for (int i = 0; i < num_threads; i++) {
     if (pthread_join(threads[i], NULL) != 0) {
       err(1, "pthread_join() failed");
-    } else if (pthread_join(threads[i], NULL) == 0) {
-      printf("pthread_join() succes\n");
     }
   }
 }

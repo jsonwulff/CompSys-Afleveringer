@@ -15,9 +15,58 @@
 // very handy.
 #include <err.h>
 
-#include <pthread.h>
-
 #include "job_queue.h"
+
+pthread_mutex_t stdout_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct workerData {
+  struct job_queue job_queue;
+  char const* needle;
+};
+
+int fauxgrep_file(char const *needle, char const *path) {
+  FILE *f = fopen(path, "r");
+
+  if (f == NULL) {
+    warn("failed to open %s", path);
+    return -1;
+  }
+
+  char *line = NULL;
+  size_t linelen = 0;
+  int lineno = 1;
+
+  while (getline(&line, &linelen, f) != -1) {
+    if (strstr(line, needle) != NULL) {
+      assert(pthread_mutex_lock(&stdout_mutex) == 0);
+      printf("%s:%d: %s", path, lineno, line);
+      assert(pthread_mutex_unlock(&stdout_mutex) == 0);
+    }
+
+    lineno++;
+  }
+
+  free(line);
+  fclose(f);
+
+  return 0;
+}
+
+
+void* worker(void *arg){
+  struct workerData *wd = arg;
+
+  while (1) {
+    char* path;
+    if (job_queue_pop(&wd->job_queue, (void**)&path) == 0){
+      fauxgrep_file(wd->needle, path);
+      free(path);
+    } else {
+      break;
+    }
+  }
+  return NULL;
+}
 
 int main(int argc, char * const *argv) {
   if (argc < 2) {
@@ -51,7 +100,20 @@ int main(int argc, char * const *argv) {
     paths = &argv[2];
   }
 
-  assert(0); // Initialise the job queue and some worker threads here.
+  // Create job queue
+  struct job_queue jq;
+  job_queue_init(&jq, 64);
+
+  struct workerData wd;
+  job_queue_init(&wd.job_queue, 64);
+  wd.needle = needle;
+
+  pthread_t *threads = calloc(num_threads, sizeof(pthread_t));
+  for (int i = 0; i < num_threads; i++) {
+    if (pthread_create(&threads[i], NULL, &worker, &wd) != 0) {
+      err(1, "pthread_create() failed");
+    }
+  }
 
   // FTS_LOGICAL = follow symbolic links
   // FTS_NOCHDIR = do not change the working directory of the process
@@ -72,7 +134,7 @@ int main(int argc, char * const *argv) {
     case FTS_D:
       break;
     case FTS_F:
-      assert(0); // Process the file p->fts_path, somehow.
+      job_queue_push(&wd.job_queue, (void*)strdup(p->fts_path));
       break;
     default:
       break;
@@ -81,7 +143,16 @@ int main(int argc, char * const *argv) {
 
   fts_close(ftsp);
 
-  assert(0); // Shut down the job queue and the worker threads here.
+
+  job_queue_destroy(&wd.job_queue);
+
+  // Wait for all threads to finish.  This is important, at some may
+  // still be working on their job.
+  for (int i = 0; i < num_threads; i++) {
+    if (pthread_join(threads[i], NULL) != 0) {
+      err(1, "pthread_join() failed");
+    }
+  }
 
   return 0;
 }
