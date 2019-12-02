@@ -53,7 +53,6 @@ void fib_line(const char *line) {
 // pointer to a job queue.
 void* worker(void *arg) {
   struct job_queue *jq = arg;
-  printf("Im a worker\n");
   while (1) {
     char *line;
     if (job_queue_pop(jq, (void**)&line) == 0) {

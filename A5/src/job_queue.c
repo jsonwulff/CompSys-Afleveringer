@@ -45,12 +45,12 @@ int job_queue_push(struct job_queue *job_queue, void *data) {
   pthread_mutex_lock(&job_queue->lock);
   while (job_queue->cnt == job_queue->capacity) {
     pthread_cond_wait(&job_queue->job_empty, &job_queue->lock);
-    }
-    job_queue->cnt++;
-    job_queue->jobs[job_queue->cnt] = data;
-    pthread_cond_signal(&job_queue->job_full);
-    pthread_mutex_unlock(&job_queue->lock);
-    return 0;
+  }
+  job_queue->cnt++;
+  job_queue->jobs[job_queue->cnt] = data;
+  pthread_cond_signal(&job_queue->job_full);
+  pthread_mutex_unlock(&job_queue->lock);
+  return 0;
 }
 
 int job_queue_pop(struct job_queue *job_queue, void **data) {
@@ -68,6 +68,4 @@ int job_queue_pop(struct job_queue *job_queue, void **data) {
     pthread_mutex_unlock(&job_queue->lock);
     return -1;
   }
-
-
 }
