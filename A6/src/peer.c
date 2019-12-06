@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
    * HINT: use the specified ip and port to setup a socket to the name server.
    * HINT: remember that you are free to use everything from csapp.c.
    */
-   // name_server_socket = ...
+   name_server_socket = Open_clientfd(name_server_ip, name_server_port);
 
 
   /*
@@ -55,8 +55,14 @@ int main(int argc, char **argv) {
   char *message;
 
   int running = 1;
-  while (running) {
 
+  while (Fgets(rio_buf, MAXLINE, stdin) != NULL) {
+    Rio_writen(name_server_socket, rio_buf, strlen(rio_buf));
+  }
+  Close(name_server_socket);
+  exit(0);
+
+  while (running) {
     /*
      * read line of user input and parse
      * the command, storing arguments in args.
