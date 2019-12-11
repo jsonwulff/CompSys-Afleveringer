@@ -14,7 +14,10 @@ typedef struct client_t {
    * find necessary to maintain across a user session.
    *
    */
-
+  char *username;
+  char *password;
+  char *ip;
+  char *port;
   int conn_socket;
 
 } client_t;

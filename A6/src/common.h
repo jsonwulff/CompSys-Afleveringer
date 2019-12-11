@@ -7,13 +7,14 @@
 #include "csapp.h"
 
 /*
- * add macros and function declarations which should be 
+ * add macros and function declarations which should be
  * common between the name server and peer programs in this file.
  */
 
 #define USERNAME_LEN       32   // max length of a valid username.
 #define MAX_LINE           128  // max length of a line of user input.
-#define MAX_USER_ARGNUM 4       // max number of arguments to peer commands.
+#define MAX_USER_ARGNUM    4    // max number of arguments to peer commands.
+#define PASSWORD_LEN       32
 
 #define IP_LEN             16
 #define PORT_LEN           8

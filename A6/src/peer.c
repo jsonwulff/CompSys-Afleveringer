@@ -55,12 +55,12 @@ int main(int argc, char **argv) {
   char *message;
 
   int running = 1;
-
-  while (Fgets(rio_buf, MAXLINE, stdin) != NULL) {
-    Rio_writen(name_server_socket, rio_buf, strlen(rio_buf));
-  }
-  Close(name_server_socket);
-  exit(0);
+  // Send data to serva as is
+  // while (Fgets(rio_buf, MAXLINE, stdin) != NULL) {
+  //   Rio_writen(name_server_socket, rio_buf, strlen(rio_buf));
+  // }
+  // Close(name_server_socket);
+  // exit(0);
 
   while (running) {
     /*
@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     } else if (num_read <= 1) continue; // if input is an empty line or EOF.
 
-
     command = parse_command(rio_buf, args); // see common.h for a description of parse_command()
+    //printf("%s", args);
 
     switch (command) {
 
@@ -91,6 +91,20 @@ int main(int argc, char **argv) {
         snprintf(my_ip,   IP_LEN,   ip);   // write ip and port to my_ip and my_port
         snprintf(my_port, PORT_LEN, port);
 
+
+        // Rio_writen(name_server_socket, "0", 1);
+        // Rio_writen(name_server_socket, "\n", 1);
+        Rio_writen(name_server_socket, "0", 1);
+        Rio_writen(name_server_socket, username, USERNAME_LEN);
+        Rio_writen(name_server_socket, password, PASSWORD_LEN);
+        Rio_writen(name_server_socket, my_ip, IP_LEN);
+        Rio_writen(name_server_socket, my_port, PORT_LEN);
+        Rio_writen(name_server_socket, "\n", 1);
+        // Rio_writen(name_server_socket, username, strlen(password));
+        // Rio_writen(name_server_socket, "\n", 1);
+        // Rio_writen(name_server_socket, password, strlen(password));
+        // Rio_writen(name_server_socket, "\n", 1);
+        // Rio_writen(name_server_socket, password, strlen(password));
         /*
          * TODO #2
          * TODO: LOG INTO NAME SERVER HERE.
@@ -115,7 +129,7 @@ int main(int argc, char **argv) {
           break;
         }
 
-        username = args[1]; // username to lookup (may be null)
+        username = args[0]; // username to lookup (may be null)
 
         /*
          * TODO #3
@@ -140,7 +154,8 @@ int main(int argc, char **argv) {
          *
          * HINT: as with /login, you eventually want to set logged_in to 0.
          */
-        // logged_in = 0;
+        logged_in = 0;
+
 
         break;
 
@@ -154,6 +169,7 @@ int main(int argc, char **argv) {
          * HINT: as is, the client simply exits. depending on your protocol,
          * HINT: consider what should happen if the user is logged in at exit.
          */
+
         break;
 
 
@@ -197,6 +213,6 @@ int main(int argc, char **argv) {
    * HINT: at this point, the client is (should be) properly logged out of
    * HINT: the name server, so this step should be easy :)
    */
-
+  Close(name_server_socket);
   exit(EXIT_SUCCESS);
 }
