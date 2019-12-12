@@ -18,6 +18,7 @@ typedef struct client_t {
   char *password;
   char *ip;
   char *port;
+  int logged_in;
   int conn_socket;
 
 } client_t;

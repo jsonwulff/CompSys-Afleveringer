@@ -3,6 +3,9 @@
 char name_server_ip[IP_LEN];       // hostname and port of name server - these
 char name_server_port[PORT_LEN];   // are passed as command line arguments.
 int  name_server_socket = -1;      // socket to the name server. initialized to -1.
+rio_t rio_read;
+char read_buf[MAXLINE];
+
 
 char my_ip[IP_LEN];                // my_ip and my_port are set on /login, and are used for listening.
 char my_port[PORT_LEN];
@@ -10,6 +13,15 @@ char my_port[PORT_LEN];
 char my_username[USERNAME_LEN];
 
 int logged_in = 0;
+
+void protocol_header(int socket, char* command, char* username, char* ip, char* port, char* args){
+        Rio_writen(socket, command, 1);
+        Rio_writen(socket, username, USERNAME_LEN);
+        Rio_writen(socket, ip, IP_LEN);
+        Rio_writen(socket, port, PORT_LEN);
+        Rio_writen(socket, args, MAX_LINE);
+        Rio_writen(socket, "\n", 1);
+}
 
 int main(int argc, char **argv) {
 
@@ -36,8 +48,8 @@ int main(int argc, char **argv) {
    * HINT: use the specified ip and port to setup a socket to the name server.
    * HINT: remember that you are free to use everything from csapp.c.
    */
-   name_server_socket = Open_clientfd(name_server_ip, name_server_port);
-
+  name_server_socket = Open_clientfd(name_server_ip, name_server_port);
+  Rio_readinitb(&rio_read, name_server_socket);
 
   /*
    * we use the RIO library from csapp.c to read user input line by line.
@@ -55,12 +67,6 @@ int main(int argc, char **argv) {
   char *message;
 
   int running = 1;
-  // Send data to serva as is
-  // while (Fgets(rio_buf, MAXLINE, stdin) != NULL) {
-  //   Rio_writen(name_server_socket, rio_buf, strlen(rio_buf));
-  // }
-  // Close(name_server_socket);
-  // exit(0);
 
   while (running) {
     /*
@@ -90,21 +96,8 @@ int main(int argc, char **argv) {
 
         snprintf(my_ip,   IP_LEN,   ip);   // write ip and port to my_ip and my_port
         snprintf(my_port, PORT_LEN, port);
+        // QUESTION: Should username and password use this aswell?
 
-
-        // Rio_writen(name_server_socket, "0", 1);
-        // Rio_writen(name_server_socket, "\n", 1);
-        Rio_writen(name_server_socket, "0", 1);
-        Rio_writen(name_server_socket, username, USERNAME_LEN);
-        Rio_writen(name_server_socket, password, PASSWORD_LEN);
-        Rio_writen(name_server_socket, my_ip, IP_LEN);
-        Rio_writen(name_server_socket, my_port, PORT_LEN);
-        Rio_writen(name_server_socket, "\n", 1);
-        // Rio_writen(name_server_socket, username, strlen(password));
-        // Rio_writen(name_server_socket, "\n", 1);
-        // Rio_writen(name_server_socket, password, strlen(password));
-        // Rio_writen(name_server_socket, "\n", 1);
-        // Rio_writen(name_server_socket, password, strlen(password));
         /*
          * TODO #2
          * TODO: LOG INTO NAME SERVER HERE.
@@ -119,6 +112,18 @@ int main(int argc, char **argv) {
          * HINT: eventually, you want to set logged_in to 1, but depending
          * HINT: on your protocol, you may want to somehow confirm the login first :)
          */
+        protocol_header(name_server_socket, "0", username, my_ip, my_port, password);
+
+        if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
+          printf("YAY\n");
+          logged_in = 1;
+        } else {
+          printf("OH NOOO\n");
+        }
+        // while ((n = ) != 0) {
+	      //     printf("%d, %s\n", n, read_buf);
+        // }
+
         // logged_in = 1;
         break;
 

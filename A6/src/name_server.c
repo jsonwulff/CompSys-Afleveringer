@@ -32,10 +32,10 @@ int main(int argc, char **argv) {
 
   printf(">> Accepting peers on port %s ...\n", listen_port);
 
-  struct client_t *cleint0;
-  snprintf(cleint0->username, 32, "julian");
-  cleint0->password = "hamster";
-  clients[0] = cleint0;
+  struct client_t *client0;
+  client0->username = "julian";
+  client0->password = "hamster";
+  clients[0] = client0;
 
   // struct client_t cleint1;
   // cleint1.username = "pelle";
@@ -99,15 +99,47 @@ void routine(int connfd){
 
   Rio_readinitb(&rio, connfd);
   while ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {  // line:netp:echo:eof
-    int command = atoi(&buf[0]);
-    if (command == 0){
-      printf("login requested\n");
-      char* usrname = strndup(buf+1, 32);
-      printf("from user: %s\n", usrname);
-      if (strcmp(usrname, clients[0]->username)){
-        printf("And user exist on serverbase\n");
+      int command   = atoi(&buf[0]);
+      char *usrname = strndup(buf + 1, USERNAME_LEN);
+      char *ip      = strndup(buf + 33, IP_LEN);
+      char *port    = strndup(buf + 49, PORT_LEN);
+      printf("recieved request: %d, from %s:%s:%s\n", command, usrname, ip, port);
+
+      switch (command){
+        case 0:
+          printf("login request. Informing client\n");
+          // Rio_writen(connfd, "login request recieved\n", 23);
+          char* password = strndup(buf + 57, PASSWORD_LEN);
+
+          for (int i = 0; i < MAX_USERS; i++){
+            if (clients[i] != NULL){
+              if (strcmp(clients[i]->username, usrname) == 0){
+                printf("User: %s found. Checking password...\n", usrname);
+                if (strcmp(clients[i]->password, password) == 0){
+                  printf("Password match\n");
+                  clients[i]->logged_in = 1;
+                  clients[i]->ip = ip;
+                  clients[i]->port = port;
+                  clients[i]->conn_socket = connfd;
+                  num_active_clients++;
+                  Rio_writen(connfd, "login-succesfull\n", 18);
+                  break;
+                }else {printf("Incorrect password\n");}
+              }else {printf("username not client[%d]\n", i);}
+            }
+          }
+          break;
+
+        default:
+          break;
       }
-    }
+
+
+      // printf("from user: %s\n", usrname);
+      // printf("length of username: %d \n", sizeof(usrname));
+      // printf("length of client: %d \n", sizeof(clients[0]->username));
+      // printf("comparison: %d\n", (strcmp(usrname, clients[0]->username)));
+
 
     // if(command == 0) {
     //   printf("Login reqeust recieved\n");
