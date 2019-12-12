@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
 
         snprintf(my_ip,   IP_LEN,   ip);   // write ip and port to my_ip and my_port
         snprintf(my_port, PORT_LEN, port);
+        snprintf(my_username, USERNAME_LEN, username);
         // QUESTION: Should username and password use this aswell?
 
         /*
@@ -113,18 +114,23 @@ int main(int argc, char **argv) {
          * HINT: on your protocol, you may want to somehow confirm the login first :)
          */
         protocol_header(name_server_socket, "0", username, my_ip, my_port, password);
-
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
-          printf("YAY\n");
-          logged_in = 1;
-        } else {
-          printf("OH NOOO\n");
+          switch (atoi(&read_buf[0])){
+            case 0: //succes
+              printf("Login succesfull\n");
+              logged_in = 1;
+              break;
+            case 1: //invalid username
+              printf("invalid username\n");
+              break;
+            case 2: //incorrect password
+              printf("incorrect password\n");
+              break;
+            default:
+              break;
+          }
         }
-        // while ((n = ) != 0) {
-	      //     printf("%d, %s\n", n, read_buf);
-        // }
 
-        // logged_in = 1;
         break;
 
 
@@ -134,8 +140,15 @@ int main(int argc, char **argv) {
           break;
         }
 
-        username = args[0]; // username to lookup (may be null)
-
+        if (args[0] != NULL){
+          username = args[0]; // username to lookup (may be null)
+          protocol_header(name_server_socket, "3", my_username, my_ip, my_port, username);
+          if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
+            printf("%s", read_buf);
+          }
+        }else{
+          printf("no username entered");
+        }
         /*
          * TODO #3
          * TODO: LOOKUP USERS HERE.

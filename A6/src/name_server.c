@@ -105,13 +105,13 @@ void routine(int connfd){
       char *port    = strndup(buf + 49, PORT_LEN);
       printf("recieved request: %d, from %s:%s:%s\n", command, usrname, ip, port);
 
+      char* return_statement = NULL;
       switch (command){
-        case 0:
+        case LOGIN:
           printf("login request. Informing client\n");
           // Rio_writen(connfd, "login request recieved\n", 23);
           char* password = strndup(buf + 57, PASSWORD_LEN);
 
-          char* return_statement;
           for (int i = 0; i < MAX_USERS; i++){
             if (clients[i] != NULL){
               if (strcmp(clients[i]->username, usrname) == 0){
@@ -122,21 +122,40 @@ void routine(int connfd){
                   clients[i]->port = port;
                   clients[i]->conn_socket = connfd;
                   num_active_clients++;
-                  return_statement = "login-succesfull\n";
+                  return_statement = "0\n";
                   break;
-                }else {return_statement = "wrong password\n";}
+                }else {return_statement = "2\n";}
               }
             }
           }
           if (return_statement == NULL){
-            return_statement = "no such username\n";
+            return_statement = "1\n";
           }
-          Rio_writen(connfd, return_statement, strlen(return_statement));
           break;
-
+        case LOGOUT:
+          return_statement = "Logout request recieved\n";
+          break;
+        case EXIT:
+          return_statement = "Exit request recieved\n";
+          break;
+        case LOOKUP:
+          return_statement = "Lookup request recieved\n";
+          break;
+        case MSG:
+          return_statement = "MSG request recieved\n";
+          break;
+        case SHOW:
+          return_statement = "Show request recieved\n";
+          break;
+        case ERROR:
+          return_statement = "Error request recieved\n";
+          break;
         default:
           break;
+
       }
+
+      Rio_writen(connfd, return_statement, strlen(return_statement));
 
 
       // printf("from user: %s\n", usrname);
