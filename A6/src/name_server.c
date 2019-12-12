@@ -111,10 +111,10 @@ void routine(int connfd){
           // Rio_writen(connfd, "login request recieved\n", 23);
           char* password = strndup(buf + 57, PASSWORD_LEN);
 
+          char* return_statement;
           for (int i = 0; i < MAX_USERS; i++){
             if (clients[i] != NULL){
               if (strcmp(clients[i]->username, usrname) == 0){
-                printf("User: %s found. Checking password...\n", usrname);
                 if (strcmp(clients[i]->password, password) == 0){
                   printf("Password match\n");
                   clients[i]->logged_in = 1;
@@ -122,12 +122,16 @@ void routine(int connfd){
                   clients[i]->port = port;
                   clients[i]->conn_socket = connfd;
                   num_active_clients++;
-                  Rio_writen(connfd, "login-succesfull\n", 18);
+                  return_statement = "login-succesfull\n";
                   break;
-                }else {printf("Incorrect password\n");}
-              }else {printf("username not client[%d]\n", i);}
+                }else {return_statement = "wrong password\n";}
+              }
             }
           }
+          if (return_statement == NULL){
+            return_statement = "no such username\n";
+          }
+          Rio_writen(connfd, return_statement, strlen(return_statement));
           break;
 
         default:
@@ -145,7 +149,6 @@ void routine(int connfd){
     //   printf("Login reqeust recieved\n");
     // }
     printf("server received %d bytes\n", (int)n);
-    printf("And it was %x \n", buf[0]);
   }
 }
 
