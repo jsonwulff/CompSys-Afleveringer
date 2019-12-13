@@ -14,11 +14,12 @@ char my_username[USERNAME_LEN];
 
 int logged_in = 0;
 
-void protocol_header(int socket, char* command, char* username, char* ip, char* port, char* args){
+void protocol_header(int socket, char* command, char* username, char* ip, char* port, char* args_flag, char* args){
         Rio_writen(socket, command, 1);
         Rio_writen(socket, username, USERNAME_LEN);
         Rio_writen(socket, ip, IP_LEN);
         Rio_writen(socket, port, PORT_LEN);
+        Rio_writen(socket, args_flag, 1);
         Rio_writen(socket, args, MAX_LINE);
         Rio_writen(socket, "\n", 1);
 }
@@ -113,7 +114,7 @@ int main(int argc, char **argv) {
          * HINT: eventually, you want to set logged_in to 1, but depending
          * HINT: on your protocol, you may want to somehow confirm the login first :)
          */
-        protocol_header(name_server_socket, "0", username, my_ip, my_port, password);
+        protocol_header(name_server_socket, "0", username, my_ip, my_port, "0", password);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
           switch (atoi(&read_buf[0])){
             case 0: //succes
@@ -149,17 +150,18 @@ int main(int argc, char **argv) {
           break;
         }
 
+        username = args[0]; // username to lookup (may be null)
+
         if (username == NULL){
 
-            protocol_header(name_server_socket, "3", my_username, my_ip, my_port, "0");
+            protocol_header(name_server_socket, "3", my_username, my_ip, my_port, "0", username);
             if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
                 printf("%s", read_buf);
             }
 
         }else {
-            
-            username = args[0]; // username to lookup (may be null)
-            protocol_header(name_server_socket, "3", my_username, my_ip, my_port, username);
+
+            protocol_header(name_server_socket, "3", my_username, my_ip, my_port, "1", username);
             if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
                 printf("%s", read_buf);
             }
@@ -179,7 +181,7 @@ int main(int argc, char **argv) {
          *
          * HINT: as with /login, you eventually want to set logged_in to 0.
          */
-        protocol_header(name_server_socket, "1", my_username, my_ip, my_port, NULL);
+        protocol_header(name_server_socket, "1", my_username, my_ip, my_port, "0", NULL);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
             printf("%s", read_buf);
         }
@@ -191,7 +193,7 @@ int main(int argc, char **argv) {
 
 
       case EXIT:
-        protocol_header(name_server_socket, "0", my_username, my_ip, my_port, NULL);
+        protocol_header(name_server_socket, "0", my_username, my_ip, my_port, "0", NULL);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
             printf("%s", read_buf);
         }

@@ -24,7 +24,6 @@ void protocol_header(int socket, char* command, char* username, char* ip, char* 
 }
 
 int main(int argc, char **argv) {
-
   if (argc != MAIN_ARGNUM + 1) {
     fprintf(stderr, "Usage: %s <name server IP> <name server port>.\n", argv[0]);
     exit(EXIT_FAILURE);
@@ -113,7 +112,9 @@ int main(int argc, char **argv) {
          * HINT: eventually, you want to set logged_in to 1, but depending
          * HINT: on your protocol, you may want to somehow confirm the login first :)
          */
-        protocol_header(name_server_socket, "0", username, my_ip, my_port, password);
+
+        // NOTE: Maybe case should be defined as macros
+        protocol_header(name_server_socket, LOGIN_COM, username, my_ip, my_port, password);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
           switch (atoi(&read_buf[0])){
             case 0: //succes
@@ -142,7 +143,7 @@ int main(int argc, char **argv) {
 
         if (args[0] != NULL){
           username = args[0]; // username to lookup (may be null)
-          protocol_header(name_server_socket, "3", my_username, my_ip, my_port, username);
+          protocol_header(name_server_socket, LOOKUP_COM, my_username, my_ip, my_port, username);
           if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0){
             printf("%s", read_buf);
           }

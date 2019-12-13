@@ -17,7 +17,7 @@ void *client_init(struct client_t *c, int *conn_sock);
  */
 
 int find_user(char* username){
-    for (int i = 0; i < MAX_USERS){
+    for (int i = 0; i < MAX_USERS; i++){
         if (clients[i] != NULL){
             if (strcmp(clients[i]->username, username) == 0){return i;}
         }
@@ -115,45 +115,43 @@ void routine(int connfd){
       char *usrname = strndup(buf + 1, USERNAME_LEN);
       char *ip      = strndup(buf + 33, IP_LEN);
       char *port    = strndup(buf + 49, PORT_LEN);
+      int args_flag = atoi(&buf[57]);
+      printf("args flag: %d", args_flag);
       printf("recieved request: %d, from %s:%s:%s\n", command, usrname, ip, port);
+
       int user_index = find_user(usrname);
       char* return_statement = NULL;
-      
-      if (user_index == -1){
-          return_statement = "invalid user in protocol header";
-          Rio_writen(connfd, return_statement, strlen(return_statement));
-          continue;
-      }
+
+      // if (user_index == -1){
+      //     return_statement = "invalid user in protocol header";
+      //     Rio_writen(connfd, return_statement, strlen(return_statement));
+      //     continue;
+      // }
 
       switch (command){
         case LOGIN:
           printf("login request. Informing client\n");
           // Rio_writen(connfd, "login request recieved\n", 23);
-          char* password = strndup(buf + 57, PASSWORD_LEN);
-
-          for (int i = 0; i < MAX_USERS; i++){
-            if (clients[i] != NULL){
-              if (strcmp(clients[i]->username, usrname) == 0){
-                if (strcmp(clients[i]->password, password) == 0){
-                  printf("Password match\n");
-                  //clients[i]->logged_in = 1;
-                  //clients[i]->ip = ip;
-                  //clients[i]->port = port;
-                  //clients[i]->conn_socket = connfd;
-                  //num_active_clients++;
-                  return_statement = "0\n";
-                  break;
-                }else {return_statement = "2\n";}
-              }
-            }
-          }
-          if (return_statement == NULL){
+          char* password = strndup(buf + 58, PASSWORD_LEN);
+          if (user_index == -1){
             return_statement = "1\n";
-          }
+          }else if (strcmp(clients[user_index]->password, password) == 0){
+
+            printf("Password match\n");
+            //clients[i]->logged_in = 1;
+            //clients[i]->ip = ip;
+            //clients[i]->port = port;
+            //clients[i]->conn_socket = connfd;
+            //num_active_clients++;
+            return_statement = "0\n";
+
+          }else {return_statement = "2\n";}
+
           break;
+
         case LOGOUT:
           return_statement = "Logout request recieved\n";
-          
+
           break;
         case EXIT:
           return_statement = "Exit request recieved\n";
