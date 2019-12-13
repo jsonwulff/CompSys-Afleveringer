@@ -9,3 +9,7 @@
 #define LOGOUT_COM      "1"
 #define EXIT_COM        "2"
 #define LOOKUP_COM      "3"
+
+// Define args flag
+#define IGN_ARGS         "0"
+#define USE_ARGS         "1"
