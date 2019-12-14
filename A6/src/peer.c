@@ -3,26 +3,25 @@
 char name_server_ip[IP_LEN];      // hostname and port of name server - these
 char name_server_port[PORT_LEN];  // are passed as command line arguments.
 int name_server_socket = -1;  // socket to the name server. initialized to -1.
-rio_t rio_read;
-char read_buf[MAXLINE];
 
-char my_ip[IP_LEN];  // my_ip and my_port are set on /login, and are used for
-                     // listening.
+char my_ip[IP_LEN];  // my_ip and my_port are set on /login, and are used for listening.
 char my_port[PORT_LEN];
-
 char my_username[USERNAME_LEN];
+char my_password[PASSWORD_LEN];
 
 int logged_in = 0;
 
-void protocol_header(int socket, char* command, char* username, char* ip,
-                     char* port, char* args_flag, char* args) {
+rio_t rio_read;
+char read_buf[MAXLINE];
+
+// Login protocol
+void login_protocol(int socket, char* command, char* username, char* password, char* ip,
+                     char* port) {
   Rio_writen(socket, command, 1);
   Rio_writen(socket, username, USERNAME_LEN);
+  Rio_writen(socket, password, PASSWORD_LEN);
   Rio_writen(socket, ip, IP_LEN);
   Rio_writen(socket, port, PORT_LEN);
-  Rio_writen(socket, args_flag, 1);
-  Rio_writen(socket, args, MAX_LINE);
-  // if (args != NULL){Rio_writen(socket, args, MAX_LINE);}
   Rio_writen(socket, "\n", 1);
 }
 
@@ -45,12 +44,7 @@ int main(int argc, char** argv) {
   printf(">> Connecting to name server at %s:%s ...\n", name_server_ip,
          name_server_port);
 
-  /*
-   * TODO #1
-   * TODO: SETUP NAME SERVER CONNECTION HERE
-   * HINT: use the specified ip and port to setup a socket to the name server.
-   * HINT: remember that you are free to use everything from csapp.c.
-   */
+
   name_server_socket = Open_clientfd(name_server_ip, name_server_port);
   Rio_readinitb(&rio_read, name_server_socket);
 
@@ -100,27 +94,9 @@ int main(int argc, char** argv) {
         snprintf(my_ip, IP_LEN, ip);  // write ip and port to my_ip and my_port
         snprintf(my_port, PORT_LEN, port);
         snprintf(my_username, USERNAME_LEN, username);
-        // QUESTION: Should username and password use this aswell?
+        snprintf(my_password, USERNAME_LEN, password);
 
-        /*
-         * TODO #2
-         * TODO: LOG INTO NAME SERVER HERE.
-         * HINT: use the established connection to the
-         * HINT: name server to send a login request
-         *
-         * HINT: write to the name_server_socket set up earlier; recall that a
-         * HINT: socket is functionally similar to a file descriptor, and
-         * HINT: is written to similarly. you can for example use the RIO
-         * library, HINT: but otherwise google is your friend.
-         *
-         * HINT: eventually, you want to set logged_in to 1, but depending
-         * HINT: on your protocol, you may want to somehow confirm the login
-         * first :)
-         */
-
-        // NOTE: Maybe case should be defined as macros
-        protocol_header(name_server_socket, LOGIN_COM, username, my_ip, my_port,
-                        USE_ARGS, password);
+        login_protocol(name_server_socket, LOGIN_COM, my_username, my_password, my_ip, my_port);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
           switch (atoi(&read_buf[0])) {
             case 0:  // Login successfull
@@ -128,12 +104,16 @@ int main(int argc, char** argv) {
               logged_in = 1;
               break;
             case 1:  // invalid username
-              printf(">> Invalid username, try again.\n");
+              printf(">> User is already logged in.\n");
               break;
-            case 2:  // incorrect password
+            case 2:  // invalid username
               printf(">> Incorrect password, try again.\n");
               break;
+            case 3:  // incorrect password
+              printf(">> Invalid username, try again.\n");
+              break;
             default:
+              printf(">> Unrecognized error, try again\n");
               break;
           }
         }
@@ -147,37 +127,44 @@ int main(int argc, char** argv) {
         }
 
         username = args[0];  // username to lookup (may be null)
+
+        int done = 0;
+
         if (username != NULL) {
-          protocol_header(name_server_socket, LOOKUP_COM, my_username, my_ip,
-                          my_port, USE_ARGS, username);
-          if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
-            printf("%s", read_buf);
+          Rio_writen(name_server_socket, LOOKUP_COM, 1);
+          Rio_writen(name_server_socket, USE_ARGS, 1);
+          Rio_writen(name_server_socket, username, USERNAME_LEN);
+          Rio_writen(name_server_socket, "\n", 1);
+          while(!done) {
+            if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
+              if(strcmp(read_buf, "0\n") == 0) {
+                done = 1;
+                break;
+              } else if(strcmp(read_buf, "1\n") == 0) {
+                printf("%s is not online (or username invalid).\n", username);
+                done = 1;
+                break;
+              } else {
+                printf("%s", read_buf);
+              }
+            }
           }
         } else {
-          protocol_header(name_server_socket, LOOKUP_COM, my_username, my_ip,
-                          my_port, IGN_ARGS, NULL);
-          int done = 0;
-          while (!done){
+          Rio_writen(name_server_socket, LOOKUP_COM, 1);
+          Rio_writen(name_server_socket, IGN_ARGS, 1);
+          Rio_writen(name_server_socket, "\n", 1);
+          while(!done) {
             if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
-              if (strcmp(read_buf, "DONE\n") == 0){
+              if(strcmp(read_buf, "0\n") == 0) {
                 done = 1;
-              }else {
+                break;
+              } else {
                 printf("%s", read_buf);
               }
             }
           }
         }
 
-
-        /*
-         * TODO #3
-         * TODO: LOOKUP USERS HERE.
-         *
-         * HINT: recall that the API specifies that the user can
-         * HINT: optionally omit a username to the lookup command.
-         * HINT: you can choose to either handle it here or server-
-         * HINT: side, depending on your chosen protocol.
-         */
         break;
 
       case LOGOUT:
@@ -185,69 +172,48 @@ int main(int argc, char** argv) {
           printf(">> /logout error: not logged onto name server.\n");
           break;
         }
-        /*
-         * TODO #4
-         * TODO: LOGOUT OF NAME SERVER HERE.
-         *
-         * HINT: as with /login, you eventually want to set logged_in to 0.
-         */
 
-        protocol_header(name_server_socket, LOGOUT_COM, my_username, my_ip, my_port, IGN_ARGS, NULL);
+        Rio_writen(name_server_socket, LOGOUT_COM, 1);
+        Rio_writen(name_server_socket, "\n", 1);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
             switch (atoi(&read_buf[0])){
               case 0:
-                printf("logout succesfull\n");
+                printf(">> Goodbye ...\n");
                 logged_in = 0;
                 break;
-
               case 1:
-                printf("something went wrong\n");
-                break;
-              default:
-                printf("logout failed");
+                printf(">> Logout failed\n");
                 break;
             }
         }
-
         break;
 
       case EXIT:
         if (logged_in){
-          protocol_header(name_server_socket, LOGOUT_COM, my_username, my_ip, my_port, IGN_ARGS, NULL);
+          Rio_writen(name_server_socket, LOGOUT_COM, 1);
+          Rio_writen(name_server_socket, "\n", 1);
           if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
             switch (atoi(&read_buf[0])){
               case 0:
-                printf("logout succesfull\n");
+                printf(">> Logging out...\n");
                 logged_in = 0;
+                printf(">> Closing client...\n");
                 running = 0;
                 break;
-
               case 1:
-                printf("something went wrong\n");
-                break;
-              default:
-                printf("logout failed");
+                printf(">> Logout failed...\n");
                 break;
             }
           }
-        }else {
-          running = 0;
+        } else {
+            printf(">> Closing client...\n");
+            running = 0;
+            break;
         }
-        /*
-         * TODO #5
-         * TODO: EXIT CLIENT HERE.
-         *
-         * HINT: as is, the client simply exits. depending on your protocol,
-         * HINT: consider what should happen if the user is logged in at exit.
-         */
 
         break;
 
       case MSG:
-        /*
-         * NOT REQUIRED FOR A6. we save the actual messaging for A7.
-         */
-
         if (!logged_in) {
           printf(">> /msg error: not logged onto name server.\n");
           break;
@@ -257,11 +223,7 @@ int main(int argc, char** argv) {
         break;
 
       case SHOW:
-        /*
-         * NOT REQUIRED FOR A6. we leave the actual messaging for A7
-         */
-
-        if (!logged_in) {
+       if (!logged_in) {
           printf(">> /show error: not logged onto name server.\n");
           break;
         }
@@ -274,13 +236,6 @@ int main(int argc, char** argv) {
     }
   }
 
-  printf(">> Closing client ...\n");
-  /*
-   * TODO #6
-   * TODO: CLOSE CONNECTION (ie. socket to name server) HERE.
-   * HINT: at this point, the client is (should be) properly logged out of
-   * HINT: the name server, so this step should be easy :)
-   */
   Close(name_server_socket);
   exit(EXIT_SUCCESS);
 }

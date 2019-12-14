@@ -9,6 +9,9 @@ csapp.o: csapp.c csapp.h
 common.o: common.c common.h
 	$(GCC) -c $< -o $@
 
+# test.t: test.c
+# 	$(GCC) -c $< -o $@
+
 peer: peer.c peer.h common.o csapp.o
 	$(GCC) $< *.o -o $@ $(LD_FLAGS)
 
@@ -21,4 +24,4 @@ zip: ../src.zip
 	cd .. && zip -r src.zip src/Makefile src/*.c src/*.h
 
 clean:
-	rm -rf *.o peer name_server vgcore*
+	rm -rf *.o peer test name_server vgcore*
