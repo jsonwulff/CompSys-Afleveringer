@@ -97,13 +97,7 @@ int main(int argc, char **argv) {
 
   exit(EXIT_SUCCESS);
 }
-// void *client_init(struct client_t *c, int *conn_suck){
-//   c->conn_socket = (int) *conn_suck;
-//   c->username = NULL;
-//   c->password = NULL;
-//   c->port = NULL;
-//   c->ip = NULL;
-// }
+
 
 void routine(int connfd) {
   size_t n;
@@ -115,6 +109,8 @@ void routine(int connfd) {
     int command = atoi(&buf[0]);
 
     //research if free(3) should be used here..
+
+
     char *usrname = strndup(buf + 1, USERNAME_LEN);
     char *ip = strndup(buf + 33, IP_LEN);
     char *port = strndup(buf + 49, PORT_LEN);
@@ -122,22 +118,19 @@ void routine(int connfd) {
     char* args;
     if (args_flag){args = strndup(buf + 58, MAX_LINE);}
 
-    //printf("recieved request: %d, from %s:%s:%s\n", command, usrname, ip, port);
     int user_index = find_user(usrname);
     char *return_statement = NULL;
 
     switch (command) {
       case LOGIN:
-        printf("login request. Informing client\n");
-        // Rio_writen(connfd, "login request recieved\n", 23);
+        printf("Login request received.\n");
+
         char *password = strndup(args, PASSWORD_LEN);
-        printf("%s", password);
 
         for (int i = 0; i < MAX_USERS; i++) {
           if (clients[i] != NULL) {
             if (strcmp(clients[i]->username, usrname) == 0) {
               if (strcmp(clients[i]->password, password) == 0) {
-                printf("Password match\n");
                 clients[i]->logged_in = 1;
                 clients[i]->ip = ip;
                 clients[i]->port = port;
@@ -155,6 +148,7 @@ void routine(int connfd) {
           return_statement = "1\n";
         }
         break;
+
       case LOGOUT:
         printf("Logout request recieved\n");
         if (user_index != -1){

@@ -21,7 +21,8 @@ void protocol_header(int socket, char* command, char* username, char* ip,
   Rio_writen(socket, ip, IP_LEN);
   Rio_writen(socket, port, PORT_LEN);
   Rio_writen(socket, args_flag, 1);
-  if (args != NULL){Rio_writen(socket, args, MAX_LINE);}
+  Rio_writen(socket, args, MAX_LINE);
+  // if (args != NULL){Rio_writen(socket, args, MAX_LINE);}
   Rio_writen(socket, "\n", 1);
 }
 
@@ -81,8 +82,7 @@ int main(int argc, char** argv) {
     } else if (num_read <= 1)
       continue;  // if input is an empty line or EOF.
 
-    command = parse_command(
-        rio_buf, args);  // see common.h for a description of parse_command()
+    command = parse_command(rio_buf, args);  // see common.h for a description of parse_command()
     // printf("%s", args);
 
     switch (command) {
@@ -123,15 +123,15 @@ int main(int argc, char** argv) {
                         USE_ARGS, password);
         if (Rio_readlineb(&rio_read, read_buf, MAXLINE) != 0) {
           switch (atoi(&read_buf[0])) {
-            case 0:  // succes
-              printf("Login succesfull\n");
+            case 0:  // Login successfull
+              printf(">> Welcome to the name server.\n");
               logged_in = 1;
               break;
             case 1:  // invalid username
-              printf("invalid username\n");
+              printf(">> Invalid username, try again.\n");
               break;
             case 2:  // incorrect password
-              printf("incorrect password\n");
+              printf(">> Incorrect password, try again.\n");
               break;
             default:
               break;
