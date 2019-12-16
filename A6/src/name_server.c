@@ -137,11 +137,9 @@ void routine(int connfd) {
           return_statement = "1\n";
           break;
         }
-
         break;
 
-
-      case LOOKUP: ;
+      case LOOKUP:
         printf(">> Lookup request recieved.\n");
 
         char *temp_use_args = strndup(buf + 1, 1);

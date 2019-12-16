@@ -6,6 +6,6 @@ void protocol_header(int socket, char* command, char* username, char* ip,
   Rio_writen(socket, port, PORT_LEN);
   Rio_writen(socket, args_flag, 1);
   Rio_writen(socket, args, MAX_LINE);
-  // if (args != NULL){Rio_writen(socket, args, MAX_LINE);}
+  if (args != NULL){Rio_writen(socket, args, MAX_LINE);}
   Rio_writen(socket, "\n", 1);
 }
