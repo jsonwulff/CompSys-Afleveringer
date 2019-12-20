@@ -11,5 +11,5 @@
 #define LOOKUP_COM      "3"
 
 // Define args flag
-#define IGN_ARGS         "0"
 #define USE_ARGS         "1"
+#define IGN_ARGS         "0"

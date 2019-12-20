@@ -15,6 +15,7 @@
 #define MAX_LINE           128  // max length of a line of user input.
 #define MAX_USER_ARGNUM    4    // max number of arguments to peer commands.
 #define PASSWORD_LEN       32
+#define USER_ID_LEN        2
 
 #define IP_LEN             16
 #define PORT_LEN           8
