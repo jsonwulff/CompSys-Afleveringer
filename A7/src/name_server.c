@@ -186,7 +186,7 @@ void routine(int connfd) {
 
     printf("server received %d bytes\n", (int)n);
   }
-  clients[user_index]->logged_in == 0;
+  clients[user_index]->logged_in = 0;
 }
 
 void *thread(void *vargp) {

@@ -9,17 +9,20 @@ rebuild : clean all
 csapp.o : csapp.c csapp.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+common.o : common.c common.h
+	$(CC) $(GCC) -c $< -o $@
+
 buffer.o : buffer.c buffer.h csapp.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-peer : peer.c peer.h csapp.o buffer.o
+peer : peer.c peer.h csapp.o common.o buffer.o
 	$(CC) $(CFLAGS) $< *.o -o $@ $(LD_FLAGS)
 
-name_server : name_server.c name_server.h csapp.o
+name_server : name_server.c name_server.h csapp.o common.o
 	$(CC) $(CFLAGS) $< *.o -o $@ $(LD_FLAGS)
 
 clean :
-	rm -rf *.o peer name_server
+	rm -rf *.o peer name_server common
 
 ../src.zip :
 	make clean
